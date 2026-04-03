@@ -1,14 +1,14 @@
 import cv2
+import numpy as np
+from ultralytics import YOLO
+
+CLAHE = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
 
 def enhance_contrast(frame):
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    merged = cv2.merge((l, a, b))
-    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
+    lab[:, :, 0] = CLAHE.apply(lab[:, :, 0])
+    
+    return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
 
 def preprocess_frame(frame):
@@ -25,25 +25,20 @@ def preprocess_frame(frame):
 
 
 def preprocessing_image(image_source):
-    """
-    Applies preprocessing to a single image.
-    Accepts either a file path (string) or an already loaded OpenCV image array.
-    """
+
     if isinstance(image_source, str):
         image = cv2.imread(image_source)
         if image is None:
             raise ValueError(f"Cannot read image at {image_source}")
     else:
         image = image_source
-        
+
     img_proc = enhance_contrast(image)
     img_proc = preprocess_frame(img_proc)
-    
-    img_proc = cv2.resize(img_proc, (640, 640))
-    
+
     return img_proc
 
-def preprocessing_stream(source=0, target_fps=30.0):
+def preprocessing_stream(source=0, target_fps=30.0, yield_raw=False):
 
     cap = cv2.VideoCapture(source)
     if not cap.isOpened():
@@ -65,28 +60,80 @@ def preprocessing_stream(source=0, target_fps=30.0):
 
         time_accumulator += source_frame_time
 
-        # If source is > 30 FPS, time_accumulator will be < target_frame_time, 
-        # so this loop won't trigger and we "drop/skip" the frame.
-        
-        # If source is < 30 FPS, time_accumulator will grow large, 
-        # allowing us to yield the SAME frame multiple times to catch up to 30 FPS.
         while time_accumulator >= target_frame_time:
             frame_proc = enhance_contrast(frame)
             frame_proc = preprocess_frame(frame_proc)
-
-            frame_proc = cv2.resize(frame_proc, (640, 640))
-
-            yield frame_proc
+            if yield_raw:
+                yield frame, frame_proc
+            else:
+                yield frame_proc
 
             time_accumulator -= target_frame_time
 
     cap.release()
 
 if __name__ == "__main__":
-    for frame in preprocessing_stream("input.mp4", target_fps=30):
-        cv2.imshow("Test 640x640 (Forced 30 FPS)", frame)
+    # Image preprocessing
 
-        if cv2.waitKey(33) & 0xFF == 27:
-            break
+    sample_image = r"D:\Abhay\Hacksagon_Project\IDDAW_LOWLIGHT\00000000_rgb.png"
+    try:
+        model = YOLO(r"D:\Abhay\Hacksagon_Project\bestNew.pt", task="segment")
+        orig_img = cv2.imread(sample_image)
+        if orig_img is None:
+            raise ValueError(f"Cannot read image at {sample_image}")
+        proc_img = preprocessing_image(orig_img)
+        
+        raw_results = model(orig_img, verbose=False)
+        proc_results = model(proc_img, verbose=False)
+        
+        raw_boxes = raw_results[0].boxes
+        proc_boxes = proc_results[0].boxes
+        
+        raw_conf = sum([float(box.conf) for box in raw_boxes]) / len(raw_boxes) if len(raw_boxes) > 0 else 0.0
+        proc_conf = sum([float(box.conf) for box in proc_boxes]) / len(proc_boxes) if len(proc_boxes) > 0 else 0.0
+        
+        print(f"Raw Objects Found: {len(raw_boxes)} | Avg Confidence: {raw_conf:.3f}")
+        print(f"Pre Objects Found: {len(proc_boxes)} | Avg Confidence: {proc_conf:.3f}")
+        raw_annotated = raw_results[0].plot()
+        proc_annotated = proc_results[0].plot()
 
+        h, w = orig_img.shape[:2]
+        display_orig = cv2.resize(raw_annotated, (640, int(640 * h / w)))
+        display_proc = cv2.resize(proc_annotated, (640, int(640 * h / w)))
+        
+        combined_img = np.hstack((display_orig, display_proc))
+        cv2.imshow("Raw Segmented (Left) vs Preprocessed Segmented (Right)", combined_img)
+        cv2.waitKey(0)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Video Preprocessing
+    try:
+        model = YOLO(r"D:\Abhay\Hacksagon_Project\bestNew.pt", task="segment")
+        for raw_frame, proc_frame in preprocessing_stream("input.mp4", target_fps=30, yield_raw=True):
+            raw_results = model(raw_frame, verbose=False)
+            proc_results = model(proc_frame, verbose=False)
+            
+            raw_boxes = raw_results[0].boxes
+            proc_boxes = proc_results[0].boxes
+            
+            raw_conf = sum([float(box.conf) for box in raw_boxes]) / len(raw_boxes) if len(raw_boxes) > 0 else 0.0
+            proc_conf = sum([float(box.conf) for box in proc_boxes]) / len(proc_boxes) if len(proc_boxes) > 0 else 0.0
+            
+            print(f"Video Frame - Raw Obj: {len(raw_boxes)} (conf: {raw_conf:.3f}) | Pre Obj: {len(proc_boxes)} (conf: {proc_conf:.3f})")
+            
+            raw_annotated = raw_results[0].plot()
+            proc_annotated = proc_results[0].plot()
+
+            h, w = raw_frame.shape[:2]
+            display_orig = cv2.resize(raw_annotated, (640, int(640 * h / w)))
+            display_proc = cv2.resize(proc_annotated, (640, int(640 * h / w)))
+            
+            combined_frame = np.hstack((display_orig, display_proc))
+            cv2.imshow("Video Segmented: Raw (Left) vs Preprocessed (Right)", combined_frame)
+            if cv2.waitKey(33) & 0xFF == 27:
+                break
+    except Exception as e:
+        print(f"Error: {e}")
+        
     cv2.destroyAllWindows()
