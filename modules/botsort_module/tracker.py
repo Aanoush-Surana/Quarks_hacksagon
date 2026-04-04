@@ -42,7 +42,12 @@ from .utils import match_tracks_to_detections
 # ---------------------------------------------------------------------------
 
 try:
-    from ultralytics.trackers.bot_sort import BotSort as _BotSort
+    try:
+        # Newer ultralytics versions (e.g. 8.4+)
+        from ultralytics.trackers.bot_sort import BOTSORT as _BotSort
+    except ImportError:
+        # Older ultralytics versions
+        from ultralytics.trackers.bot_sort import BotSort as _BotSort
 except ImportError as exc:
     raise ImportError(
         "ultralytics >= 8.0 is required for BotSort tracking. "
@@ -62,35 +67,18 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 class _DetectionStub:
-    """
-    Minimal proxy that looks like ``ultralytics.engine.results.Boxes``
-    to the BoT-SORT tracker's ``update()`` method.
-
-    The tracker accesses:
-        results.xyxy   → Tensor (N, 4) absolute pixel coords (x1 y1 x2 y2)
-        results.conf   → Tensor (N,)   detection confidences
-        results.cls    → Tensor (N,)   integer class labels
-        results.id     → None before tracking (tracker sets this itself)
-
-    Some ultralytics versions use ``results.boxes.xyxy`` instead of
-    ``results.xyxy``.  Setting ``self.boxes = self`` satisfies both patterns.
-
-    Parameters
-    ----------
-    xyxy : np.ndarray, shape (N, 4), dtype float32
-    conf : np.ndarray, shape (N,),   dtype float32
-    cls  : np.ndarray, shape (N,),   dtype float32
-    orig_shape : tuple (H, W) — used for normalised-coordinate checks
-    """
-
+    # Minimal proxy that looks like ``ultralytics.engine.results.Boxes``
     def __init__(
         self,
-        xyxy: np.ndarray,
-        conf: np.ndarray,
-        cls:  np.ndarray,
+        xyxy,
+        conf,
+        cls,
         orig_shape: Tuple[int, int] = (1080, 1920),
     ) -> None:
         self.xyxy  = torch.as_tensor(xyxy, dtype=torch.float32)
+        if self.xyxy.ndim == 1:
+            self.xyxy = self.xyxy.unsqueeze(0)
+            
         self.conf  = torch.as_tensor(conf, dtype=torch.float32)
         self.cls   = torch.as_tensor(cls,  dtype=torch.float32)
         self.id    = None          # tracker will fill this in
@@ -100,6 +88,29 @@ class _DetectionStub:
         self.boxes  = self
         self.masks  = None
         self.probs  = None
+
+    @property
+    def xywh(self) -> torch.Tensor:
+        """Dynamically compute xywh format as required by init_track in new ultralytics."""
+        xywh = torch.empty_like(self.xyxy)
+        if self.xyxy.numel() > 0:
+            xywh[..., 0] = (self.xyxy[..., 0] + self.xyxy[..., 2]) / 2  # x center
+            xywh[..., 1] = (self.xyxy[..., 1] + self.xyxy[..., 3]) / 2  # y center
+            xywh[..., 2] = self.xyxy[..., 2] - self.xyxy[..., 0]        # width
+            xywh[..., 3] = self.xyxy[..., 3] - self.xyxy[..., 1]        # height
+        return xywh
+
+    def __len__(self) -> int:
+        return len(self.conf)
+
+    def __getitem__(self, idx) -> "_DetectionStub":
+        """Newer ultralytics explicitly slices the results object itself."""
+        return _DetectionStub(
+            xyxy=self.xyxy[idx],
+            conf=self.conf[idx],
+            cls=self.cls[idx],
+            orig_shape=self.orig_shape
+        )
 
 
 def _build_stub(
@@ -174,6 +185,10 @@ class BotSortTracker:
             cfg_dict.update(cfg_overrides)
 
         cfg_dict["with_reid"] = with_reid
+        
+        # Newer ultralytics expects 'model' instead of 'model_weights' for ReID
+        if with_reid and "model" not in cfg_dict:
+            cfg_dict["model"] = cfg_dict.get("model_weights", "osnet_x0_25_msmt17.pt")
 
         args = _NS(**cfg_dict)
         self._tracker    = _BotSort(args, frame_rate=fps)
@@ -233,17 +248,23 @@ class BotSortTracker:
 
         self._frame_idx += 1
 
-        if not online_targets:
+        if len(online_targets) == 0:
             return []
 
         # ------------------------------------------------------------------
-        # Match returned STrack objects back to input detections by highest IoU.
-        # STrack objects have a .tlbr property = [x1, y1, x2, y2].
+        # Match returned targets back to input detections by highest IoU.
+        # Newer ultralytics returns np.ndarray of shape (N, 8) [x1,y1,x2,y2, tid, seq, cls, idx]
+        # Older returns a list of STrack objects.
         # ------------------------------------------------------------------
-        track_bboxes = np.array(
-            [self._strack_xyxy(t) for t in online_targets],
-            dtype=np.float32,
-        )  # shape (T, 4)
+        if isinstance(online_targets, np.ndarray):
+            track_bboxes = online_targets[:, :4].astype(np.float32)
+            track_ids    = online_targets[:, 4].astype(int)
+        else:
+            track_bboxes = np.array(
+                [self._strack_xyxy(t) for t in online_targets],
+                dtype=np.float32,
+            )
+            track_ids    = np.array([int(t.track_id) for t in online_targets], dtype=int)
 
         det_bboxes = np.array(
             [d.bbox_xyxy for d in detections],
@@ -253,7 +274,7 @@ class BotSortTracker:
         matched_pairs = match_tracks_to_detections(track_bboxes, det_bboxes)
 
         return [
-            (det_idx, int(online_targets[t_idx].track_id))
+            (det_idx, int(track_ids[t_idx]))
             for det_idx, t_idx in matched_pairs
         ]
 

@@ -22,6 +22,8 @@ track_buffer: 30
 match_thresh: 0.8
 # Fuse detection score into the matching cost (recommended: true)
 fuse_score: true
+# Global Motion Compensation method (required by newer ultralytics versions)
+gmc_method: sparseOptFlow
 
 # --- ReID (appearance features) ---
 # Set true only if a video path and ReID weights are supplied
