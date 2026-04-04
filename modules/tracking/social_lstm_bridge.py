@@ -4,7 +4,7 @@ from collections import deque
 from modules.social_lstm.data.botsort_adapter import CoordConverter
 
 class SocialLSTMBridge:
-    def __init__(self, obs_len=16, max_agents=8, pixels_per_metre=10.0):
+    def __init__(self, obs_len=10, max_agents=8, pixels_per_metre=10.0):
         self.obs_len = obs_len
         self.max_agents = max_agents
         

@@ -34,6 +34,7 @@ ENABLE_PREPROCESSING = False
 # Set to True to display stream in real-time (Do not save as video)
 # Set to False to save output as video (Do not display real-time stream)
 SHOW_REALTIME_STREAM = True
+SAVE_LSTM_JSON = False
 # --------------------------
 
 # Configure logging
@@ -61,7 +62,7 @@ def load_config(config_path="config.yaml"):
         logger.warning(f"Config file {config_path} not found. Proceeding with defaults.")
         return {
             'paths': {
-                'default_video_input': "data/inputs/sample_1.mp4",
+                'default_video_input': "data/inputs/sample_3.mp4",
                 'default_weights': "weights/best.pt",
                 'output_preprocess': "data/outputs/preprocess",
                 'output_segmentation': "data/outputs/segmentation",
@@ -91,6 +92,7 @@ class AsyncPipeline:
         self.out_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_final.mp4")
         self.out_json_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_results.json")
         self.out_lstm_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_lstm_final.mp4")
+        self.out_lstm_json_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_lstm_results.json")
         
         # Modules
         res = config['pipeline'].get('preprocess_resolution', [640, 640])
@@ -143,11 +145,13 @@ class AsyncPipeline:
         self.json_queue = Queue()
         self.lstm_queue = Queue(maxsize=15)
         self.lstm_display_queue = Queue(maxsize=1)
+        self.lstm_json_queue = Queue()
         
         # Control flags
         self.running = True
         self.capture_done = False
         self.inference_done = False
+        self.lstm_done = False
         
         self.start_time = 0
         self.frames_processed = 0
@@ -354,16 +358,6 @@ class AsyncPipeline:
                 lstm_inputs = self.lstm_bridge.update_and_get_window(frame_idx, frame_data.get("detections", []))
                 
                 if lstm_inputs is not None:
-                    # Draw basic bounding boxes from frame_data
-                    for det in frame_data.get("detections", []):
-                        bbox = det.get("bbox")
-                        tid = det.get("track_id")
-                        c_name = det.get("class_name", "")
-                        if bbox and tid is not None and det.get("state") != "stuff":
-                            x1, y1, x2, y2 = map(int, bbox)
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
-                            cv2.putText(frame, f"ID:{tid}", (x1, max(0, y1-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,255,255), 1)
-
                     obs = lstm_inputs["obs"].to(self.lstm_device)
                     mask = lstm_inputs["mask"].to(self.lstm_device)
                     
@@ -372,13 +366,35 @@ class AsyncPipeline:
                     
                     trajectories = self.lstm_bridge.convert_predictions_to_pixel(mu, lstm_inputs["context"])
                     
+                    track_colors = {}
+                    for det in frame_data.get("detections", []):
+                        tid = det.get("track_id")
+                        bbox = det.get("bbox")
+                        if isinstance(tid, int) and bbox is not None:
+                            c = self.seg_model._PALETTE[tid % len(self.seg_model._PALETTE)]
+                            color = (int(c[2]), int(c[1]), int(c[0])) # RGB to BGR
+                            track_colors[tid] = color
+                            
+                            x1, y1, x2, y2 = map(int, bbox)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                            cv2.putText(frame, f"ID:{tid}", (x1, max(0, y1-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+                    
                     for tid, points in trajectories.items():
+                        color = track_colors.get(tid, (0, 0, 255))
                         for i in range(1, len(points)):
                             pt1 = points[i-1]
                             pt2 = points[i]
-                            # Draw past trajectory / future prediction
-                            cv2.line(frame, pt1, pt2, (0, 0, 255), 2)
-                            cv2.circle(frame, pt2, 3, (0, 255, 255), -1)
+                            cv2.line(frame, pt1, pt2, color, 2)
+                            if i == len(points) - 1:  # Circle at the final destination
+                                cv2.circle(frame, pt2, 4, color, -1)
+                                
+            if SAVE_LSTM_JSON and self.social_lstm is not None and lstm_inputs is not None:
+                lstm_data = {
+                    "frame_id": frame_idx,
+                    "timestamp_sec": timestamp,
+                    "predictions": [{"track_id": tid, "path": [(int(p[0]), int(p[1])) for p in pts]} for tid, pts in trajectories.items()]
+                }
+                self.lstm_json_queue.put(lstm_data)
                             
             if self.show_stream:
                 if self.lstm_display_queue.empty():
@@ -389,6 +405,7 @@ class AsyncPipeline:
                     
             self.lstm_queue.task_done()
             
+        self.lstm_done = True
         if not self.show_stream and out_lstm_vid is not None:
             out_lstm_vid.release()
         logger.info("LSTM thread finished.")
@@ -411,6 +428,25 @@ class AsyncPipeline:
         with open(self.out_json_path, 'w') as f:
             json.dump(all_results, f, indent=2)
         logger.info(f"JSON Logger finished. Path: {self.out_json_path}")
+
+    def lstm_json_thread(self):
+        """Thread 6: Asynchronous LSTM JSON Data flow."""
+        all_results = []
+        logger.info("Starting LSTM JSON Metadata Thread.")
+        
+        while self.running:
+            try:
+                data = self.lstm_json_queue.get(timeout=0.5)
+            except Empty:
+                if self.lstm_done: break
+                continue
+            
+            all_results.append(data)
+            self.lstm_json_queue.task_done()
+            
+        with open(self.out_lstm_json_path, 'w') as f:
+            json.dump(all_results, f, indent=2)
+        logger.info(f"LSTM JSON Logger finished. Path: {self.out_lstm_json_path}")
 
     def _draw_hud(self, frame, frame_idx, fps, stats):
         """Draw a semi-transparent diagnostic HUD panel on the frame."""
@@ -457,6 +493,9 @@ class AsyncPipeline:
             threading.Thread(target=self.json_thread, name="JSON"),
             threading.Thread(target=self.lstm_thread, name="LSTM")
         ]
+        
+        if SAVE_LSTM_JSON:
+            threads.append(threading.Thread(target=self.lstm_json_thread, name="LSTM_JSON"))
         
         for t in threads:
             t.daemon = True

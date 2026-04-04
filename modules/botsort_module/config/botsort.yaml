@@ -19,7 +19,7 @@ track_buffer: 30
 
 # --- Association ---
 # IoU threshold for matching tracks to detections
-match_thresh: 0.8
+match_thresh: 0.65
 # Fuse detection score into the matching cost (recommended: true)
 fuse_score: true
 # Global Motion Compensation method (required by newer ultralytics versions)

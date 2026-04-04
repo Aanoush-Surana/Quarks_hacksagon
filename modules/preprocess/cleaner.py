@@ -4,7 +4,7 @@ import logging
 
 class Preprocessor:
     def __init__(self, target_resolution=(640, 640), high_perf=True, enabled=True):
-        self.target_resolution = target_resolution
+        # self.target_resolution = target_resolution
         self.high_perf = high_perf
         self.enabled=enabled
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -45,7 +45,7 @@ class Preprocessor:
             frame = self.enhance_contrast(frame)
             
         frame_proc = self.apply_filters(frame)
-        frame_proc = cv2.resize(frame_proc, self.target_resolution)
+        # frame_proc = cv2.resize(frame_proc, self.target_resolution)
         return frame_proc
 
     def process_video(self, input_path, output_path):
@@ -62,7 +62,8 @@ class Preprocessor:
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         # For writing mp4, mp4v is commonly supported cross-platform
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, self.target_resolution)
+        # out = cv2.VideoWriter(output_path, fourcc, fps, self.target_resolution)
+        out = cv2.VideoWriter(output_path, fourcc, fps)
 
         frame_count = 0
         while True:

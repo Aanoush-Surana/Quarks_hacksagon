@@ -151,38 +151,78 @@ def mask_to_polygon(
 # Track ↔ detection matching
 # ---------------------------------------------------------------------------
 
-def match_tracks_to_detections(
-    track_bboxes: np.ndarray,
-    det_bboxes:   np.ndarray,
-    iou_threshold: float = 0.0,
-) -> List[Tuple[int, int]]:
-    """
-    Greedy 1-to-1 matching: pair each track bbox to the highest-IoU detection.
+import numpy as np
+from scipy.optimize import linear_sum_assignment
 
-    Parameters
-    ----------
-    track_bboxes  : (T, 4) float32 — [x1,y1,x2,y2] for each returned STrack
-    det_bboxes    : (D, 4) float32 — [x1,y1,x2,y2] for each input detection
-    iou_threshold : float          — matches below this IoU are discarded
 
-    Returns
-    -------
-    list of (detection_index, track_index) integer pairs
-    """
-    if track_bboxes.shape[0] == 0 or det_bboxes.shape[0] == 0:
+def compute_iou_matrix(tracks, detections):
+    iou_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float32)
+
+    for i, t in enumerate(tracks):
+        tx1, ty1, tx2, ty2 = t
+
+        for j, d in enumerate(detections):
+            dx1, dy1, dx2, dy2 = d
+
+            xx1 = max(tx1, dx1)
+            yy1 = max(ty1, dy1)
+            xx2 = min(tx2, dx2)
+            yy2 = min(ty2, dy2)
+
+            w = max(0, xx2 - xx1)
+            h = max(0, yy2 - yy1)
+            inter = w * h
+
+            area_t = (tx2 - tx1) * (ty2 - ty1)
+            area_d = (dx2 - dx1) * (dy2 - dy1)
+
+            union = area_t + area_d - inter + 1e-6
+            iou_matrix[i, j] = inter / union
+
+    return iou_matrix
+
+
+def compute_center_distance_matrix(tracks, detections):
+    dist_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float32)
+
+    for i, t in enumerate(tracks):
+        tcx = (t[0] + t[2]) / 2
+        tcy = (t[1] + t[3]) / 2
+
+        for j, d in enumerate(detections):
+            dcx = (d[0] + d[2]) / 2
+            dcy = (d[1] + d[3]) / 2
+
+            dist = np.sqrt((tcx - dcx)**2 + (tcy - dcy)**2)
+            dist_matrix[i, j] = dist
+
+    # normalize distances (important)
+    if dist_matrix.size > 0:
+        dist_matrix = dist_matrix / (dist_matrix.max() + 1e-6)
+
+    return dist_matrix
+
+
+def match_tracks_to_detections(track_bboxes, det_bboxes,
+                               iou_weight=0.6,
+                               dist_weight=0.4,
+                               iou_thresh=0.1):
+    if len(track_bboxes) == 0 or len(det_bboxes) == 0:
         return []
 
-    matched: List[Tuple[int, int]] = []
-    used_dets: set = set()
+    iou_matrix = compute_iou_matrix(track_bboxes, det_bboxes)
+    dist_matrix = compute_center_distance_matrix(track_bboxes, det_bboxes)
 
-    for t_idx in range(track_bboxes.shape[0]):
-        ious = iou_xyxy(track_bboxes[t_idx], det_bboxes)
-        # Zero out already-used detections
-        for used in used_dets:
-            ious[used] = -1.0
-        best_d = int(np.argmax(ious))
-        if ious[best_d] >= iou_threshold:
-            matched.append((best_d, t_idx))
-            used_dets.add(best_d)
+    # Convert to similarity
+    similarity = (iou_weight * iou_matrix) + (dist_weight * (1 - dist_matrix))
 
-    return matched
+    # Hungarian matching
+    cost_matrix = -similarity
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    matches = []
+    for r, c in zip(row_ind, col_ind):
+        if iou_matrix[r, c] >= iou_thresh:
+            matches.append((c, r))  # (det_idx, track_idx)
+
+    return matches
