@@ -322,7 +322,10 @@ class AsyncPipeline:
         finally:
             self.running = False
             for t in threads:
-                t.join(timeout=1.0)
+                try:
+                    t.join(timeout=1.0)
+                except (KeyboardInterrupt, Exception):
+                    pass
             cv2.destroyAllWindows()
             
         logger.info("-" * 40)
