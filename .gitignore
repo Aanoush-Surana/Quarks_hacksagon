@@ -9,6 +9,7 @@ venv/
 .venv/
 env.bak/
 venv.bak/
+.env
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -21,21 +22,31 @@ venv.bak/
 *.pt
 *.pth
 *.onnx
+*.engine
 
 # Data and Outputs
 data/outputs/
 data/raw/
+data/idd20kII/
 runs/
 *.mp4
 *.avi
 *.mkv
-*.json  # ignore individual run json files, but keep config.json if needed
-!config.yaml # Ensure config is tracked
+
+# JSON outputs (but keep eval results and configs)
+*.json
+!eval_yolo_results/metrics_summary.json
+!config.yaml
 
 # Logs
 *.log
 
-#Training Social lstm
+# Training — Social LSTM
 modules/social_lstm/data/argoverse/
 modules/social_lstm/data/__pycache__/
 modules/social_lstm/checkpoints/
+
+# Legacy files (removed from repo)
+preprocessor.py
+new_testbed.py
+Preprocessing/

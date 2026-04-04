@@ -1,5 +1,5 @@
 paths:
-  default_video_input: "data/inputs/sample_new.mp4"
+  default_video_input: "data/inputs/samp_4.mp4"
   default_weights: "weights/best.pt"  # Assumes it's in the project root
   
   output_preprocess: "data/outputs/preprocess"
