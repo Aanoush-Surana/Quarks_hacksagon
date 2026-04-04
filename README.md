@@ -37,40 +37,28 @@ Six async threads run in parallel: **Capture → Inference → Writer → JSON �
 
 ```
 Quarks_hacksagon/
-├── 🚀 main.py                           ← Entry point (run this)
-├── ⚙️  config.yaml                       ← All paths & thresholds
-├── 📦 requirements.txt
-├── 🏋️  idd_yolov8_segmentation.py        ← YOLOv8 training script
-├── 📊 evaluate_idd.py                   ← YOLOv8 evaluation on IDD val set
+├── main.py                     ← Entry point (run this)
+├── config.yaml                 ← All paths & thresholds
+├── requirements.txt
+├── idd_yolov8_segmentation.py  ← YOLOv8 training script
+├── evaluate_idd.py             ← YOLOv8 evaluation on IDD val set
 │
-├── eval_yolo_results/                   ← Pre-computed eval outputs
-│   ├── metrics_summary.json            ← mIoU · Pixel Acc · per-class IoU
-│   ├── confusion_matrix.png
-│   ├── per_class_iou.png
-│   └── overlays/                       ← Sample prediction overlays
-│
-├── weights/
-│   ├── 🧠 best.pt                       ← YOLOv8 weights (required)
-│   └── best.onnx
-│
+├── eval_yolo_results/          ← Pre-computed eval outputs & analysis
+├── weights/                    ← YOLOv8 model weights (download required)
 ├── data/
-│   ├── 📥 inputs/                       ← Put your video here
-│   ├── 📤 outputs/tracking/             ← Pipeline results written here
-│   └── idd20kII/                        ← IDD dataset (unzip here)
+│   ├── inputs/                 ← Place input videos here
+│   ├── outputs/                ← Pipeline results written here
+│   └── idd20kII/               ← IDD dataset (download & unzip for training)
 │
 └── modules/
-    ├── preprocess/cleaner.py            ← CLAHE + sharpening
-    ├── segmentation/inference.py        ← YOLOv8 + BoT-SORT handler
-    ├── temporal_fusion/                 ← Bayesian mask stabiliser
-    ├── tracking/
-    │   ├── tracker.py
-    │   └── social_lstm_bridge.py        ← Live tracking → LSTM bridge
-    ├── botsort_module/                  ← Standalone BoT-SORT (JSON I/O)
-    └── social_lstm/
-        ├── train.py                     ← Social LSTM training
-        ├── predict.py                   ← Standalone inference
-        ├── eval_lstm.py                 ← Social LSTM evaluation
-        └── checkpoints/best.pt          ← LSTM weights (optional)
+    ├── preprocess/             ← CLAHE + sharpening
+    ├── segmentation/           ← YOLOv8 + BoT-SORT inference handler
+    ├── temporal_fusion/        ← Bayesian mask stabiliser
+    ├── tracking/               ← Tracker + Social LSTM bridge
+    ├── botsort_module/         ← Standalone BoT-SORT (JSON I/O)
+    └── social_lstm/            ← Social LSTM training, inference & evaluation
+        ├── checkpoints/        ← LSTM weights (download required)
+        └── data/argoverse/     ← Argoverse dataset (download for training)
 ```
 
 ---
@@ -88,14 +76,31 @@ venv\Scripts\activate        # Windows
 # source venv/bin/activate   # Linux/macOS
 
 # ⬇️  3. Install dependencies
-pip install ultralytics>=8.2.0 opencv-python>=4.8.0 numpy>=1.24.0 \
-            PyYAML>=6.0 torch>=2.0.0 torchvision>=0.15.0 \
-            Pillow>=10.0.0 matplotlib>=3.7.0 tqdm>=4.65.0 \
-            pandas>=2.0.0 scikit-learn>=1.3.0 pycocotools>=2.0.7
+pip install -r requirements.txt
 ```
 
 > 🖥️ **CUDA GPU strongly recommended.** Install the matching PyTorch build from [pytorch.org](https://pytorch.org/get-started/locally/) before the step above.  
 > ⚡ On first run with a CUDA GPU, the model is auto-exported to TensorRT (`.engine`). This takes ~3 minutes but makes every subsequent run significantly faster.
+
+### ⚠️ Prerequisites — Downloads Required
+
+> **This repository does not ship model weights or datasets.** You must download and place them manually before running the pipeline or training.
+
+#### 🧠 For running the pipeline (required):
+
+| What to download | Where to place it |
+|-----------------|------------------|
+| YOLOv8 IDD segmentation weights (`best.pt`) | `weights/best.pt` |
+| Social LSTM checkpoint (`best.pt`) *(optional — enables trajectory prediction)* | `modules/social_lstm/checkpoints/best.pt` |
+
+> 🔗 **Pre-trained weights** — [📥 Download from Google Drive](https://drive.google.com/drive/folders/11AE7Li3dmfjS4tA2njA_MB57tY_FW6iP?usp=sharing)
+
+#### 🏋️ For training the models yourself:
+
+| What to download | Where to place it |
+|-----------------|------------------|
+| [IDD20k II](https://idd.insaan.iiit.ac.in/) dataset | `data/idd20kII/` — unzip so that `leftImg8bit/` and `gtFine/` are direct children |
+| [Argoverse 1](https://www.argoverse.org/av1.html) motion forecasting dataset | `modules/social_lstm/data/argoverse/` — place `train/data/` and `val/data/` inside |
 
 ---
 
@@ -336,6 +341,122 @@ python train.py \
 # ♻️  Resume from checkpoint
 python train.py --resume checkpoints/last.pt --epochs 200
 ```
+🖥️  VRAM   →  📦 Recommended batch size
+    6 GB   →  2–4
+    8 GB   →  6
+    12 GB  →  8
+    16 GB+ →  10–16
+```
+
+Training saves to `runs/segment/<run_name>/weights/`. Copy `best.pt` → `weights/best.pt`.
+
+**♻️ Resuming from a checkpoint:**
+
+```python
+results = model.train(data=DATA_YAML, epochs=40, resume=True)
+```
+
+---
+
+### 🔮 Social LSTM Trajectory Predictor
+
+Predicts the next **1.2 seconds** of motion for every tracked object. Runs live inside the pipeline if `modules/social_lstm/checkpoints/best.pt` exists.
+
+**📥 Get Argoverse 1** → [argoverse.org/av1.html](https://www.argoverse.org/av1.html)
+
+Place the dataset inside the Social LSTM module:
+
+```
+Quarks_hacksagon/
+└── modules/social_lstm/
+    └── data/
+        └── argoverse/                   ← 📂 unzip here
+            ├── train/data/              ← 📋 .csv scenario files
+            └── val/data/
+```
+
+**🚂 Train:**
+
+```bash
+cd modules/social_lstm
+
+python train.py \
+  --data_dir  data/argoverse/train/data \
+  --val_dir   data/argoverse/val/data   \
+  --output_dir checkpoints              \
+  --epochs 200 --batch_size 64
+
+# ♻️  Resume from checkpoint
+python train.py --resume checkpoints/last.pt --epochs 200
+```
+
+Key arguments:
+
+| 🔧 Flag | Default | 💬 Description |
+|-------|---------|--------------|
+| `--hidden_dim` | `128` | 🧠 LSTM hidden state size |
+| `--embedding_dim` | `64` | 🔢 Input embedding size |
+| `--pred_len` | `12` | ⏱️ Steps to predict (12 × 0.1 s = 1.2 s) |
+| `--lr` | `1e-3` | 📉 Adam learning rate |
+| `--nb_size` | `32.0` | 📏 Social pooling radius in metres |
+
+💾 Checkpoints: `checkpoints/last.pt` (every epoch) · `checkpoints/best.pt` (best val ADE)
+
+**🔍 Standalone inference on a tracking JSON:**
+
+```bash
+python predict.py \
+  --checkpoint   checkpoints/best.pt      \
+  --botsort_json ../../data/outputs/tracking/video_results.json \
+  --output_json  predictions.json         \
+  --pixels_per_metre 10.0
+```
+
+**🎬 Visualise predictions on video:**
+
+```bash
+python utils/visualise.py \
+  --video       ../../data/inputs/my_video.mp4 \
+  --predictions predictions.json               \
+  --output      annotated.mp4                  \
+  --pixels_per_metre 10.0 --show_samples
+```
+
+---
+
+## 📊 Evaluation — YOLOv8 on IDD
+
+`evaluate_idd.py` runs per-pixel segmentation evaluation against IDD20k II ground-truth polygons and produces metrics + visualisations.
+
+**▶️ Run:**
+
+```bash
+python evaluate_idd.py \
+  --model   weights/best.pt \
+  --images  data/idd20kII/leftImg8bit/val \
+  --gt_json data/idd20kII/gtFine/val \
+  --output  eval_yolo_results/
+```
+
+| 🔧 Arg | Default | 💬 Description |
+|--------|---------|---------------|
+| `--model` | *(required)* | Path to `best.pt` or `last.pt` |
+| `--images` | *(required)* | `leftImg8bit/val/` root |
+| `--gt_json` | *(required)* | `gtFine/val/` root |
+| `--output` | `eval_results/` | Output folder for plots + JSON |
+| `--limit` | `None` | Evaluate only first N images (quick test) |
+| `--samples` | `6` | Number of overlay comparison images to save |
+
+**📤 Outputs** written to `--output`:
+
+| 📄 File | Contents |
+|---------|---------|
+| `metrics_summary.json` | mIoU · Pixel Accuracy · Mean Class Accuracy · per-class IoU |
+| `confusion_matrix.png` | Normalised heatmap — top-15 classes by frequency |
+| `per_class_iou.png` | Bar chart of per-class IoU with mIoU line |
+| `overlays/sample_XXXX.png` | Side-by-side: input · ground truth · prediction |
+
+**📈 Current benchmark results** (`eval_yolo_results/metrics_summary.json`):
 
 Key arguments:
 
