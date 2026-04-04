@@ -185,7 +185,8 @@ class SegmentationModel:
                 "confidence": conf,
                 "bbox": [x1, y1, x2, y2],
                 "track_id": track_id,
-                "mask_polygon": poly_points
+                "mask_polygon": poly_points,
+                "mask": (msk.astype(np.uint8) * 255)
             })
 
         return final_frame, frame_data
