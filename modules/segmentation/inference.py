@@ -5,8 +5,8 @@ import logging
 import numpy as np
 import time
 import torch
+from pathlib import Path
 from ultralytics import YOLO
-
 
 class SegmentationModel:
     def __init__(self, weights_path, device=None, conf_thresh=0.25, iou_thresh=0.45):
@@ -19,27 +19,27 @@ class SegmentationModel:
             self.device = 0 if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
-
-        self.logger.info(f"Loading YOLOv8 model from {weights_path}")
         
-        # TensorRT Optimization Check
+        # FP16 only works on CUDA
+        self.use_half = torch.cuda.is_available()
+        self.logger.info(f"Loading YOLOv8 model from {weights_path} (device={self.device}, half={self.use_half})")
+        
+        # TensorRT Optimization Check (CUDA only)
         weights_file = Path(weights_path)
         engine_path = weights_file.with_suffix('.engine')
         
-        if engine_path.exists():
+        if engine_path.exists() and torch.cuda.is_available():
             self.logger.info(f"Loading TensorRT engine from {engine_path}")
             self.model = YOLO(str(engine_path), task='segment')
         else:
             self.logger.info(f"Loading standard YOLOv8 model from {weights_path}")
             self.model = YOLO(weights_path)
-            # Export to TensorRT if CUDA is available
-            if 'cuda' in str(device).lower():
+            # Export to TensorRT only if CUDA is actually available
+            if torch.cuda.is_available():
                 try:
                     self.logger.info("Attempting to export model to TensorRT (this may take a few minutes)...")
-                    # half=True for FP16 optimization during export
-                    exported_path = self.model.export(format='engine', device=device, half=True)
+                    exported_path = self.model.export(format='engine', device=self.device, half=True)
                     self.logger.info(f"TensorRT export successful: {exported_path}")
-                    # Reload the engine
                     self.model = YOLO(exported_path, task='segment')
                 except Exception as e:
                     self.logger.warning(f"TensorRT export failed: {e}. Falling back to standard model.")
@@ -70,16 +70,17 @@ class SegmentationModel:
         """
         H, W = frame.shape[:2]
 
-        # Inference
-        # Predict with FP16 and Retina Masks (High-Res)
-        results = self.model.predict(
+        # BoT-SORT tracking with FP16 and Retina Masks
+        results = self.model.track(
             source=frame,
             conf=self.conf_thresh,
             iou=self.iou_thresh,
             imgsz=640,
             device=self.device,
             retina_masks=True,
-            half=True,  # FP16 Inference
+            half=self.use_half,  # FP16 only on CUDA
+            persist=True,  # Maintain track state across frames
+            tracker="botsort.yaml",  # BoT-SORT tracker
             verbose=False
         )
 
@@ -130,6 +131,9 @@ class SegmentationModel:
             cls_name = names.get(cls_id, f"cls_{cls_id}")
             conf = float(box.conf[0].item())
             bgr_colour = self.get_colour(cls_id, cls_name)
+
+            # Track ID from BoT-SORT (None until tracker confirms)
+            track_id = int(box.id[0].item()) if box.id is not None else None
             
             if (mask.shape[0], mask.shape[1]) != (H, W):
                 msk = cv2.resize(mask, (W, H), interpolation=cv2.INTER_NEAREST) > 0.5
@@ -145,20 +149,22 @@ class SegmentationModel:
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
             cv2.rectangle(final_frame, (x1, y1), (x2, y2), bgr_colour, 2)
             
-            # Label background and text
-            label = f"{cls_name} {conf:.2f}"
+            # Label with track ID + class + confidence
+            tid_str = f"ID:{track_id} " if track_id is not None else ""
+            label = f"{tid_str}{cls_name} {conf:.2f}"
             (tw, th), bl = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
             cv2.rectangle(final_frame, (x1, max(0, y1-th-bl-4)), (x1+tw+6, y1), bgr_colour, -1)
             tc = (0,0,0) if sum(bgr_colour) > 380 else (255,255,255)
             cv2.putText(final_frame, label, (x1+3, y1-bl), cv2.FONT_HERSHEY_SIMPLEX, 0.5, tc, 1, cv2.LINE_AA)
             
-            # Store data for JSON
+            # Store data for JSON (includes track_id)
             poly_points = mask_segments[i].tolist() if i < len(mask_segments) else []
             frame_data["detections"].append({
                 "class_id": cls_id,
                 "class_name": cls_name,
                 "confidence": conf,
                 "bbox": [x1, y1, x2, y2],
+                "track_id": track_id,
                 "mask_polygon": poly_points
             })
 

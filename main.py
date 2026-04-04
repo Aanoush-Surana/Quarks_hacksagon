@@ -88,7 +88,6 @@ class AsyncPipeline:
         iou_th = config['pipeline'].get('iou_thresh', 0.45)
         self.seg_model = SegmentationModel(
             weights_path=weights_path, 
-            device='cuda', # Forced CUDA
             conf_thresh=conf_th, 
             iou_thresh=iou_th
         )
@@ -107,6 +106,9 @@ class AsyncPipeline:
         
         self.start_time = 0
         self.frames_processed = 0
+        self.total_frames = 0
+        self.video_fps = 30.0
+        self._last_log_count = -1
 
     def capture_thread(self):
         """Thread 1: Manages Video Capture (No frame skipping)."""
@@ -117,9 +119,11 @@ class AsyncPipeline:
             return
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        self.video_fps = fps
+        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_idx = 0
         
-        logger.info(f"Starting Capture Thread from: {self.video_path}")
+        logger.info(f"Capture Thread: {self.video_path} ({self.total_frames} frames @ {fps:.1f} FPS)")
         
         while self.running:
             ret, frame = cap.read()
@@ -151,19 +155,24 @@ class AsyncPipeline:
             # 1. Preprocess
             proc_frame = self.preprocessor.process_frame(frame)
             
-            # 2. Segmentation (Optimized with FP16/CUDA/TensorRT)
+            # 2. Segmentation + BoT-SORT Tracking
+            t0 = time.perf_counter()
             seg_frame, frame_data = self.seg_model.process_frame(proc_frame, frame_idx, timestamp)
             
-            # 3. Tracking (Placeholder logic)
+            # 3. Stats Aggregation
             tracked_frame = self.tracker.process_frame(seg_frame, frame_data)
+            inference_ms = (time.perf_counter() - t0) * 1000
+            
+            if "tracking_stats" in frame_data:
+                frame_data["tracking_stats"]["inference_ms"] = round(inference_ms, 1)
             
             # Push to display/writer queue and json queue
             self.inference_queue.put((frame_idx, tracked_frame))
             self.json_queue.put(frame_data)
             
-            # Non-blocking display queue (update only if empty to show latest)
+            # Non-blocking display queue (latest frame + stats)
             if self.display_queue.empty():
-                self.display_queue.put((frame_idx, tracked_frame))
+                self.display_queue.put((frame_idx, tracked_frame, frame_data))
                 
             self.capture_queue.task_done()
             self.frames_processed += 1
@@ -217,6 +226,38 @@ class AsyncPipeline:
             json.dump(all_results, f, indent=2)
         logger.info(f"JSON Logger finished. Path: {self.out_json_path}")
 
+    def _draw_hud(self, frame, frame_idx, fps, stats):
+        """Draw a semi-transparent diagnostic HUD panel on the frame."""
+        h, w = frame.shape[:2]
+
+        active   = stats.get("active_tracked", 0)
+        unique   = stats.get("total_unique_objects", 0)
+        det_cnt  = stats.get("detections_this_frame", 0)
+        inf_ms   = stats.get("inference_ms", 0)
+        cls_map  = stats.get("class_counts", {})
+
+        lines = [
+            f"FPS: {fps:.1f}  |  Frame: {frame_idx}/{self.total_frames}",
+            f"Active: {active}  |  Unique Objects: {unique}  |  Det/Frame: {det_cnt}",
+            f"Inference: {inf_ms:.0f}ms  |  Source: {self.video_fps:.0f}fps",
+        ]
+        if cls_map:
+            cls_str = "  ".join(f"{k}: {v}" for k, v in sorted(cls_map.items()))
+            lines.append(f"Classes: {cls_str}")
+
+        # Semi-transparent dark panel
+        line_h, pad = 22, 8
+        panel_h = len(lines) * line_h + pad * 2
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (w, panel_h), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
+
+        for i, txt in enumerate(lines):
+            y = pad + (i + 1) * line_h - 4
+            cv2.putText(frame, txt, (pad, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                        (0, 255, 200), 1, cv2.LINE_AA)
+
     def run_pipeline(self):
         logger.info("-" * 40)
         logger.info("STARTING ASYNC STREAMING PIPELINE")
@@ -244,29 +285,37 @@ class AsyncPipeline:
                     break
                     
                 if self.show_stream:
-                    # Real-time display from display_queue
                     try:
-                        frame_idx, frame = self.display_queue.get(timeout=0.01)
+                        frame_idx, frame, frame_data = self.display_queue.get(timeout=0.01)
                         
-                        # Display Stats Overlay
                         elapsed = time.time() - self.start_time
                         fps = self.frames_processed / elapsed if elapsed > 0 else 0
-                        cv2.putText(frame, f"FPS: {fps:.2f} | Frame: {frame_idx}", (10, 30),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        stats = frame_data.get("tracking_stats", {})
                         
-                        cv2.imshow("High-Performance Stream", frame)
+                        # Draw full diagnostic HUD
+                        self._draw_hud(frame, frame_idx, fps, stats)
+                        
+                        cv2.imshow("Pipeline Stream", frame)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             logger.info("User requested termination.")
                             self.running = False
                     except Empty:
                         pass
                 else:
-                    time.sleep(0.1) # Sleep to avoid maxing out CPU in main thread
+                    time.sleep(0.1)
 
-                if self.frames_processed % 30 == 0 and self.frames_processed > 0:
+                # Periodic console log (deduplicated, every 100 frames)
+                if (self.frames_processed > 0
+                        and self.frames_processed != self._last_log_count
+                        and self.frames_processed % 100 == 0):
+                    self._last_log_count = self.frames_processed
                     elapsed = time.time() - self.start_time
                     fps = self.frames_processed / elapsed
-                    logger.info(f"Performance: {fps:.2f} FPS | Q_cap: {self.capture_queue.qsize()} | Q_inf: {self.inference_queue.qsize()}")
+                    logger.info(
+                        f"[{self.frames_processed}/{self.total_frames}] "
+                        f"FPS: {fps:.1f} | Q_cap: {self.capture_queue.qsize()} "
+                        f"| Q_inf: {self.inference_queue.qsize()}"
+                    )
 
         except KeyboardInterrupt:
             logger.info("Interrupted by user.")
