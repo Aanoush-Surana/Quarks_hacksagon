@@ -13,6 +13,12 @@ from modules.tracking.tracker import TrackerModule
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("PipelineManager")
 
+# ==========================================
+# PIPELINE CONFIGURATION
+# ==========================================
+USE_PREPROCESSING = False   # Change to False to bypass preprocessing
+# ==========================================
+
 def ensure_dirs(config):
     """Ensure that all data directories exist."""
     dirs_to_create = [
@@ -35,6 +41,7 @@ def load_config(config_path="config.yaml"):
                 'output_tracking': "data/outputs/tracking"
             },
             'pipeline': {
+                'use_preprocessing': True,
                 'preprocess_resolution': [640, 640],
                 'conf_thresh': 0.25,
                 'iou_thresh': 0.45
@@ -101,8 +108,8 @@ def run_pipeline(video_path, weights_path, config):
             
         timestamp_sec = frame_idx / float(fps)
         
-        # 1. Preprocess
-        proc_frame = preprocessor.process_frame(frame)
+        # 1. Preprocess (Conditional)
+        proc_frame = preprocessor.process_frame(frame) if USE_PREPROCESSING else frame
         
         # 2. Segmentation
         seg_frame, frame_data = seg_model.process_frame(proc_frame, frame_idx, timestamp_sec)

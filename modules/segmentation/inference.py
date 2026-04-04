@@ -4,14 +4,20 @@ import json
 import logging
 import numpy as np
 import time
+import torch
 from ultralytics import YOLO
 
 class SegmentationModel:
-    def __init__(self, weights_path, device=0, conf_thresh=0.25, iou_thresh=0.45):
+    def __init__(self, weights_path, device=None, conf_thresh=0.25, iou_thresh=0.45):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
-        self.device = device
+        
+        # Dynamically set device if not explicitly provided
+        if device is None:
+            self.device = 0 if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = device
         
         self.logger.info(f"Loading YOLOv8 model from {weights_path}")
         self.model = YOLO(weights_path)
