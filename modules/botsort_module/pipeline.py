@@ -12,13 +12,6 @@ Workflow
 4.  Write assigned track_id back onto each DetectionRecord
 5.  Save the updated JSON to disk
 
-CLI usage
----------
-    python -m botsort_module.pipeline ^
-        --input  output/segmentation.json ^
-        --output output/tracked.json ^
-        --video  Data/videoplayback.mp4 ^
-        --fps    30
 
 Programmatic usage
 ------------------

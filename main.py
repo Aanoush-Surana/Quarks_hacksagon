@@ -111,7 +111,7 @@ class AsyncPipeline:
         self._last_log_count = -1
 
     def capture_thread(self):
-        """Thread 1: Manages Video Capture (No frame skipping)."""
+        """Thread 1: Manages Video Capture (Some frames are being only tracked and others are being segmented and tracked)."""
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
             logger.error(f"Cannot open video source: {self.video_path}")
@@ -124,64 +124,76 @@ class AsyncPipeline:
         frame_idx = 0
         
         logger.info(f"Capture Thread: {self.video_path} ({self.total_frames} frames @ {fps:.1f} FPS)")
-        
+
         while self.running:
             ret, frame = cap.read()
             if not ret:
                 break
-            
-            # Block and wait if the queue is full (NO FRAME SKIPPING)
+
             timestamp = frame_idx / float(fps)
             self.capture_queue.put((frame_idx, timestamp, frame))
             frame_idx += 1
-            
+
         self.capture_done = True
         cap.release()
         logger.info("Capture thread finished.")
 
     def inference_thread(self):
-        """Thread 2: Performs Inference, Preprocessing, and Rendering."""
         logger.info("Starting High-Performance Inference Thread.")
-        
+
+        DETECTION_INTERVAL = 2
+        last_frame_data = None
+
         while self.running:
             try:
-                # Wait for a frame from capture queue
                 item = self.capture_queue.get(timeout=0.5)
                 frame_idx, timestamp, frame = item
             except Empty:
-                if self.capture_done: break
+                if self.capture_done:
+                    break
                 continue
-            
-            # 1. Preprocess
+
             proc_frame = self.preprocessor.process_frame(frame)
-            
-            # 2. Segmentation + BoT-SORT Tracking
+
             t0 = time.perf_counter()
-            seg_frame, frame_data = self.seg_model.process_frame(proc_frame, frame_idx, timestamp)
-            
-            # 3. Stats Aggregation
+
+            # ---------------------------------------
+            # DETECTION DECIMATION
+            # ---------------------------------------
+            if frame_idx % DETECTION_INTERVAL == 0 or last_frame_data is None:
+                seg_frame, frame_data = self.seg_model.process_frame(proc_frame, frame_idx, timestamp)
+                last_frame_data = frame_data
+            else:
+                frame_data = last_frame_data.copy()
+                seg_frame = proc_frame
+
+                # update temporal info
+                frame_data["frame_idx"] = frame_idx
+                frame_data["timestamp"] = timestamp
+
+            # ---------------------------------------
+            # TRACKING (ALWAYS RUNS)
+            # ---------------------------------------
             tracked_frame = self.tracker.process_frame(seg_frame, frame_data)
+
             inference_ms = (time.perf_counter() - t0) * 1000
-            
+
             if "tracking_stats" in frame_data:
                 frame_data["tracking_stats"]["inference_ms"] = round(inference_ms, 1)
-            
-            # Push to display/writer queue and json queue
+
             self.inference_queue.put((frame_idx, tracked_frame))
             self.json_queue.put(frame_data)
-            
-            # Non-blocking display queue (latest frame + stats)
+
             if self.display_queue.empty():
                 self.display_queue.put((frame_idx, tracked_frame, frame_data))
-                
+
             self.capture_queue.task_done()
             self.frames_processed += 1
-            
+
         self.inference_done = True
         logger.info("Inference thread finished.")
 
     def output_thread(self):
-        """Thread 3: Background Video Writing."""
         if not self.show_stream:
             res = self.config['pipeline'].get('preprocess_resolution', [640, 640])
             W, H = tuple(res)
@@ -190,51 +202,51 @@ class AsyncPipeline:
             logger.info(f"Starting Background Writer Thread. Path: {self.out_vid_path}")
         else:
             logger.info("Background Writer disabled. Real-time stream display is ON.")
-        
+
         while self.running:
             try:
                 item = self.inference_queue.get(timeout=0.5)
                 _, frame = item
             except Empty:
-                if self.inference_done: break
+                if self.inference_done:
+                    break
                 continue
-            
+
             if not self.show_stream:
                 out_vid.write(frame)
             self.inference_queue.task_done()
-            
+
         if not self.show_stream:
             out_vid.release()
         logger.info("Writer thread finished.")
 
     def json_thread(self):
-        """Thread 4: Asynchronous JSON Data flow."""
         all_results = []
         logger.info("Starting JSON Metadata Thread.")
-        
+
         while self.running:
             try:
                 data = self.json_queue.get(timeout=0.5)
             except Empty:
-                if self.inference_done: break
+                if self.inference_done:
+                    break
                 continue
-            
+
             all_results.append(data)
             self.json_queue.task_done()
-            
+
         with open(self.out_json_path, 'w') as f:
             json.dump(all_results, f, indent=2)
         logger.info(f"JSON Logger finished. Path: {self.out_json_path}")
 
     def _draw_hud(self, frame, frame_idx, fps, stats):
-        """Draw a semi-transparent diagnostic HUD panel on the frame."""
         h, w = frame.shape[:2]
 
-        active   = stats.get("active_tracked", 0)
-        unique   = stats.get("total_unique_objects", 0)
-        det_cnt  = stats.get("detections_this_frame", 0)
-        inf_ms   = stats.get("inference_ms", 0)
-        cls_map  = stats.get("class_counts", {})
+        active = stats.get("active_tracked", 0)
+        unique = stats.get("total_unique_objects", 0)
+        det_cnt = stats.get("detections_this_frame", 0)
+        inf_ms = stats.get("inference_ms", 0)
+        cls_map = stats.get("class_counts", {})
 
         lines = [
             f"FPS: {fps:.1f}  |  Frame: {frame_idx}/{self.total_frames}",
@@ -245,7 +257,6 @@ class AsyncPipeline:
             cls_str = "  ".join(f"{k}: {v}" for k, v in sorted(cls_map.items()))
             lines.append(f"Classes: {cls_str}")
 
-        # Semi-transparent dark panel
         line_h, pad = 22, 8
         panel_h = len(lines) * line_h + pad * 2
         overlay = frame.copy()
@@ -262,86 +273,58 @@ class AsyncPipeline:
         logger.info("-" * 40)
         logger.info("STARTING ASYNC STREAMING PIPELINE")
         logger.info("-" * 40)
-        
-        # Start Threads
+
         threads = [
-            threading.Thread(target=self.capture_thread, name="Capture"),
-            threading.Thread(target=self.inference_thread, name="Inference"),
-            threading.Thread(target=self.output_thread, name="Writer"),
-            threading.Thread(target=self.json_thread, name="JSON")
+            threading.Thread(target=self.capture_thread),
+            threading.Thread(target=self.inference_thread),
+            threading.Thread(target=self.output_thread),
+            threading.Thread(target=self.json_thread)
         ]
-        
+
         for t in threads:
             t.daemon = True
             t.start()
-            
-        # Display Loop in Main Thread
+
         self.start_time = time.time()
-        
+
         try:
             while self.running:
-                # Check for termination condition
                 if self.inference_done and self.inference_queue.empty() and self.display_queue.empty():
                     break
-                    
+
                 if self.show_stream:
                     try:
                         frame_idx, frame, frame_data = self.display_queue.get(timeout=0.01)
-                        
+
                         elapsed = time.time() - self.start_time
                         fps = self.frames_processed / elapsed if elapsed > 0 else 0
                         stats = frame_data.get("tracking_stats", {})
-                        
-                        # Draw full diagnostic HUD
+
                         self._draw_hud(frame, frame_idx, fps, stats)
-                        
+
                         cv2.imshow("Pipeline Stream", frame)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
-                            logger.info("User requested termination.")
                             self.running = False
                     except Empty:
                         pass
                 else:
                     time.sleep(0.1)
 
-                # Periodic console log (deduplicated, every 100 frames)
-                if (self.frames_processed > 0
-                        and self.frames_processed != self._last_log_count
-                        and self.frames_processed % 100 == 0):
-                    self._last_log_count = self.frames_processed
-                    elapsed = time.time() - self.start_time
-                    fps = self.frames_processed / elapsed
-                    logger.info(
-                        f"[{self.frames_processed}/{self.total_frames}] "
-                        f"FPS: {fps:.1f} | Q_cap: {self.capture_queue.qsize()} "
-                        f"| Q_inf: {self.inference_queue.qsize()}"
-                    )
-
-        except KeyboardInterrupt:
-            logger.info("Interrupted by user.")
         finally:
             self.running = False
             for t in threads:
-                try:
-                    t.join(timeout=1.0)
-                except (KeyboardInterrupt, Exception):
-                    pass
+                t.join(timeout=1.0)
             cv2.destroyAllWindows()
-            
-        logger.info("-" * 40)
-        logger.info("PIPELINE COMPLETED SUCCESSFULLY.")
-        logger.info("-" * 40)
+
 
 if __name__ == "__main__":
     config = load_config("config.yaml")
-    
-    parser = argparse.ArgumentParser(description="High-Performance YOLOv8 Streaming Pipeline.")
-    parser.add_argument("--video_path", type=str, default=config["paths"]["default_video_input"],
-                        help="Path to the raw input video.")
-    parser.add_argument("--weights_path", type=str, default=config["paths"]["default_weights"],
-                        help="Path to the YOLOv8 weights (.pt file).")
-    
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video_path", type=str, default=config["paths"]["default_video_input"])
+    parser.add_argument("--weights_path", type=str, default=config["paths"]["default_weights"])
+
     args = parser.parse_args()
-    
+
     pipeline = AsyncPipeline(args.video_path, args.weights_path, config, show_stream=SHOW_REALTIME_STREAM)
     pipeline.run_pipeline()
