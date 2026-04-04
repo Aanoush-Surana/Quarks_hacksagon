@@ -1,0 +1,12 @@
+paths:
+  default_video_input:"data/inputs/sample_1.mp4"
+  default_weights: "weights/best.pt"  # Assumes it's in the project root
+  
+  output_preprocess: "data/outputs/preprocess"
+  output_segmentation: "data/outputs/segmentation"
+  output_tracking: "data/outputs/tracking"
+
+pipeline:
+  preprocess_resolution: [640, 640]
+  conf_thresh: 0.25
+  iou_thresh: 0.45

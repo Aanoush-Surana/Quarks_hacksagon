@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+
+# Large Model Weights
+*.pt
+*.pth
+*.onnx
+
+# Data and Outputs
+data/outputs/
+data/raw/
+runs/
+*.mp4
+*.avi
+*.mkv
+*.json  # ignore individual run json files, but keep config.json if needed
+!config.yaml # Ensure config is tracked
+
+# Logs
+*.log
