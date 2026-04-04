@@ -16,7 +16,7 @@ logger = logging.getLogger("PipelineManager")
 # ==========================================
 # PIPELINE CONFIGURATION
 # ==========================================
-USE_PREPROCESSING = False   # Change to False to bypass preprocessing
+USE_PREPROCESSING = False
 # ==========================================
 
 def ensure_dirs(config):
@@ -68,12 +68,11 @@ def run_pipeline(video_path, weights_path, config):
         logger.error(f"Model weights not found: {weights_path}")
         sys.exit(1)
 
-    # Output paths
     vid_name = Path(video_path).stem
     out_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_final.mp4")
     out_json_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_results.json")
 
-    # Initialize Modules
+    # Modules
     res = config['pipeline'].get('preprocess_resolution', [640, 640])
     preprocessor = Preprocessor(target_resolution=tuple(res))
     
@@ -83,22 +82,22 @@ def run_pipeline(video_path, weights_path, config):
     
     tracker = TrackerModule()
 
-    # Setup Video Stream
+    # Video
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         logger.error(f"Cannot open video source: {video_path}")
         sys.exit(1)
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    W, H = tuple(res)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out_vid = cv2.VideoWriter(out_vid_path, fourcc, fps, (W, H))
+    out_vid = None
+    output_size = None
 
     all_tracking_data = []
-
     frame_idx = 0
+
     logger.info(f"Processing {total_frames} frames from {video_path}")
     
     while True:
@@ -108,7 +107,7 @@ def run_pipeline(video_path, weights_path, config):
             
         timestamp_sec = frame_idx / float(fps)
         
-        # 1. Preprocess (Conditional)
+        # 1. Preprocess
         proc_frame = preprocessor.process_frame(frame) if USE_PREPROCESSING else frame
         
         # 2. Segmentation
@@ -117,14 +116,36 @@ def run_pipeline(video_path, weights_path, config):
         # 3. Tracking
         tracked_frame = tracker.process_frame(seg_frame, frame_data)
         
-        # Overlays
+        # -------------------------------
+        # INIT WRITER
+        # -------------------------------
+        if out_vid is None:
+            H_out, W_out = tracked_frame.shape[:2]
+            output_size = (W_out, H_out)
+
+            out_vid = cv2.VideoWriter(out_vid_path, fourcc, fps, output_size)
+
+            if not out_vid.isOpened():
+                raise RuntimeError("VideoWriter failed to open")
+
+            logger.info(f"Writer initialized with size: {output_size}")
+
+        else:
+            # -------------------------------
+            # STRICT CONSISTENCY CHECK
+            # -------------------------------
+            if tracked_frame.shape[:2] != (output_size[1], output_size[0]):
+                raise RuntimeError(
+                    f"Frame size changed! Expected {output_size[::-1]}, got {tracked_frame.shape[:2]}"
+                )
+
+        # Overlay
         cv2.putText(tracked_frame, f"Frame: {frame_idx}/{total_frames}", (10, 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 200), 2, cv2.LINE_AA)
 
         out_vid.write(tracked_frame)
         all_tracking_data.append(frame_data)
         
-        # Display the frame in a window
         cv2.imshow("Segmentation Stream", tracked_frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             logger.info("Early termination requested by user.")
@@ -136,10 +157,10 @@ def run_pipeline(video_path, weights_path, config):
         frame_idx += 1
 
     cap.release()
-    out_vid.release()
+    if out_vid is not None:
+        out_vid.release()
     cv2.destroyAllWindows()
     
-    # Save JSON results
     with open(out_json_path, 'w') as f:
         json.dump(all_tracking_data, f, indent=2)
 
@@ -154,10 +175,8 @@ if __name__ == "__main__":
     config = load_config("config.yaml")
     
     parser = argparse.ArgumentParser(description="Run the YOLOv8 Segmentation & Tracking Pipeline.")
-    parser.add_argument("--video_path", type=str, default=config["paths"]["default_video_input"],
-                        help="Path to the raw input video.")
-    parser.add_argument("--weights_path", type=str, default=config["paths"]["default_weights"],
-                        help="Path to the YOLOv8 weights (.pt file).")
+    parser.add_argument("--video_path", type=str, default=config["paths"]["default_video_input"])
+    parser.add_argument("--weights_path", type=str, default=config["paths"]["default_weights"])
     
     args = parser.parse_args()
     
