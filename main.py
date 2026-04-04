@@ -1,330 +1,155 @@
-import os
-import sys
-import yaml
-import logging
-import argparse
-import time
-import cv2
-import json
-import threading
-from queue import Queue, Empty
-from pathlib import Path
+def inference_thread(self):
+    logger.info("Starting Optimized Temporal-Fusion Inference Thread.")
 
-from modules.preprocess.cleaner import Preprocessor
-from modules.segmentation.inference import SegmentationModel
-from modules.tracking.tracker import TrackerModule
+    DETECTION_INTERVAL = 2
 
+    last_frame_data = None
+    last_seg_frame = None
 
-ENABLE_PREPROCESSING = False
-# --- CONFIGURATION FLAG ---
-# Set to True to display stream in real-time (Do not save as video)
-# Set to False to save output as video (Do not display real-time stream)
-SHOW_REALTIME_STREAM = True
-# --------------------------
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("PipelineManager")
-
-# ==========================================
-# PIPELINE CONFIGURATION
-# ==========================================
-USE_PREPROCESSING = False
-# ==========================================
-
-def ensure_dirs(config):
-    """Ensure that all data directories exist."""
-    dirs_to_create = [
-        config['paths'].get('output_preprocess', 'data/outputs/preprocess'),
-        config['paths'].get('output_segmentation', 'data/outputs/segmentation'),
-        config['paths'].get('output_tracking', 'data/outputs/tracking'),
-    ]
-    for d in dirs_to_create:
-        os.makedirs(d, exist_ok=True)
-
-def load_config(config_path="config.yaml"):
-    if not os.path.exists(config_path):
-        logger.warning(f"Config file {config_path} not found. Proceeding with defaults.")
-        return {
-            'paths': {
-                'default_video_input': "data/inputs/sample_1.mp4",
-                'default_weights': "weights/best.pt",
-                'output_preprocess': "data/outputs/preprocess",
-                'output_segmentation': "data/outputs/segmentation",
-                'output_tracking': "data/outputs/tracking"
-            },
-            'pipeline': {
-                'use_preprocessing': True,
-                'preprocess_resolution': [640, 640],
-                'conf_thresh': 0.25,
-                'iou_thresh': 0.45
-            }
-        }
-    with open(config_path, 'r') as f:
-        return yaml.safe_load(f)
-
-class AsyncPipeline:
-    def __init__(self, video_path, weights_path, config, show_stream=True):
-        self.config = config
-        self.video_path = video_path
-        self.weights_path = weights_path
-        self.show_stream = show_stream
-        
-        ensure_dirs(config)
-        
-        # Output paths
-        vid_name = Path(video_path).stem
-        self.out_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_final.mp4")
-        self.out_json_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_results.json")
-        
-        # Modules
-        res = config['pipeline'].get('preprocess_resolution', [640, 640])
-        self.preprocessor = Preprocessor(
-            target_resolution=tuple(res),
-            enabled=ENABLE_PREPROCESSING
-        )
-        
-        conf_th = config['pipeline'].get('conf_thresh', 0.25)
-        iou_th = config['pipeline'].get('iou_thresh', 0.45)
-        self.seg_model = SegmentationModel(
-            weights_path=weights_path, 
-            conf_thresh=conf_th, 
-            iou_thresh=iou_th
-        )
-        self.tracker = TrackerModule()
-        
-        # Queues
-        self.capture_queue = Queue(maxsize=15)
-        self.inference_queue = Queue(maxsize=15)
-        self.display_queue = Queue(maxsize=1) # Latest frame only for display
-        self.json_queue = Queue()
-        
-        # Control flags
-        self.running = True
-        self.capture_done = False
-        self.inference_done = False
-        
-        self.start_time = 0
-        self.frames_processed = 0
-        self.total_frames = 0
-        self.video_fps = 30.0
-        self._last_log_count = -1
-
-    def capture_thread(self):
-        """Thread 1: Manages Video Capture (Some frames are being only tracked and others are being segmented and tracked)."""
-        cap = cv2.VideoCapture(self.video_path)
-        if not cap.isOpened():
-            logger.error(f"Cannot open video source: {self.video_path}")
-            self.running = False
-            return
-
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-        self.video_fps = fps
-        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_idx = 0
-        
-        logger.info(f"Capture Thread: {self.video_path} ({self.total_frames} frames @ {fps:.1f} FPS)")
-
-        while self.running:
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            timestamp = frame_idx / float(fps)
-            self.capture_queue.put((frame_idx, timestamp, frame))
-            frame_idx += 1
-
-        self.capture_done = True
-        cap.release()
-        logger.info("Capture thread finished.")
-
-    def inference_thread(self):
-        logger.info("Starting High-Performance Inference Thread.")
-
-        DETECTION_INTERVAL = 2
-        last_frame_data = None
-
-        while self.running:
-            try:
-                item = self.capture_queue.get(timeout=0.5)
-                frame_idx, timestamp, frame = item
-            except Empty:
-                if self.capture_done:
-                    break
-                continue
-
-            proc_frame = self.preprocessor.process_frame(frame)
-
-            t0 = time.perf_counter()
-
-            # ---------------------------------------
-            # DETECTION DECIMATION
-            # ---------------------------------------
-            if frame_idx % DETECTION_INTERVAL == 0 or last_frame_data is None:
-                seg_frame, frame_data = self.seg_model.process_frame(proc_frame, frame_idx, timestamp)
-                last_frame_data = frame_data
-            else:
-                frame_data = last_frame_data.copy()
-                seg_frame = proc_frame
-
-                # update temporal info
-                frame_data["frame_idx"] = frame_idx
-                frame_data["timestamp"] = timestamp
-
-            # ---------------------------------------
-            # TRACKING (ALWAYS RUNS)
-            # ---------------------------------------
-            tracked_frame = self.tracker.process_frame(seg_frame, frame_data)
-
-            inference_ms = (time.perf_counter() - t0) * 1000
-
-            if "tracking_stats" in frame_data:
-                frame_data["tracking_stats"]["inference_ms"] = round(inference_ms, 1)
-
-            self.inference_queue.put((frame_idx, tracked_frame))
-            self.json_queue.put(frame_data)
-
-            if self.display_queue.empty():
-                self.display_queue.put((frame_idx, tracked_frame, frame_data))
-
-            self.capture_queue.task_done()
-            self.frames_processed += 1
-
-        self.inference_done = True
-        logger.info("Inference thread finished.")
-
-    def output_thread(self):
-        if not self.show_stream:
-            res = self.config['pipeline'].get('preprocess_resolution', [640, 640])
-            W, H = tuple(res)
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out_vid = cv2.VideoWriter(self.out_vid_path, fourcc, 30.0, (W, H))
-            logger.info(f"Starting Background Writer Thread. Path: {self.out_vid_path}")
-        else:
-            logger.info("Background Writer disabled. Real-time stream display is ON.")
-
-        while self.running:
-            try:
-                item = self.inference_queue.get(timeout=0.5)
-                _, frame = item
-            except Empty:
-                if self.inference_done:
-                    break
-                continue
-
-            if not self.show_stream:
-                out_vid.write(frame)
-            self.inference_queue.task_done()
-
-        if not self.show_stream:
-            out_vid.release()
-        logger.info("Writer thread finished.")
-
-    def json_thread(self):
-        all_results = []
-        logger.info("Starting JSON Metadata Thread.")
-
-        while self.running:
-            try:
-                data = self.json_queue.get(timeout=0.5)
-            except Empty:
-                if self.inference_done:
-                    break
-                continue
-
-            all_results.append(data)
-            self.json_queue.task_done()
-
-        with open(self.out_json_path, 'w') as f:
-            json.dump(all_results, f, indent=2)
-        logger.info(f"JSON Logger finished. Path: {self.out_json_path}")
-
-    def _draw_hud(self, frame, frame_idx, fps, stats):
-        h, w = frame.shape[:2]
-
-        active = stats.get("active_tracked", 0)
-        unique = stats.get("total_unique_objects", 0)
-        det_cnt = stats.get("detections_this_frame", 0)
-        inf_ms = stats.get("inference_ms", 0)
-        cls_map = stats.get("class_counts", {})
-
-        lines = [
-            f"FPS: {fps:.1f}  |  Frame: {frame_idx}/{self.total_frames}",
-            f"Active: {active}  |  Unique Objects: {unique}  |  Det/Frame: {det_cnt}",
-            f"Inference: {inf_ms:.0f}ms  |  Source: {self.video_fps:.0f}fps",
-        ]
-        if cls_map:
-            cls_str = "  ".join(f"{k}: {v}" for k, v in sorted(cls_map.items()))
-            lines.append(f"Classes: {cls_str}")
-
-        line_h, pad = 22, 8
-        panel_h = len(lines) * line_h + pad * 2
-        overlay = frame.copy()
-        cv2.rectangle(overlay, (0, 0), (w, panel_h), (0, 0, 0), -1)
-        cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
-
-        for i, txt in enumerate(lines):
-            y = pad + (i + 1) * line_h - 4
-            cv2.putText(frame, txt, (pad, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.50,
-                        (0, 255, 200), 1, cv2.LINE_AA)
-
-    def run_pipeline(self):
-        logger.info("-" * 40)
-        logger.info("STARTING ASYNC STREAMING PIPELINE")
-        logger.info("-" * 40)
-
-        threads = [
-            threading.Thread(target=self.capture_thread),
-            threading.Thread(target=self.inference_thread),
-            threading.Thread(target=self.output_thread),
-            threading.Thread(target=self.json_thread)
-        ]
-
-        for t in threads:
-            t.daemon = True
-            t.start()
-
-        self.start_time = time.time()
-
+    while self.running:
         try:
-            while self.running:
-                if self.inference_done and self.inference_queue.empty() and self.display_queue.empty():
-                    break
+            item = self.capture_queue.get(timeout=0.5)
+            frame_idx, timestamp, frame = item
+        except Empty:
+            if self.capture_done:
+                break
+            continue
 
-                if self.show_stream:
-                    try:
-                        frame_idx, frame, frame_data = self.display_queue.get(timeout=0.01)
+        proc_frame = self.preprocessor.process_frame(frame)
+        H, W = proc_frame.shape[:2]
 
-                        elapsed = time.time() - self.start_time
-                        fps = self.frames_processed / elapsed if elapsed > 0 else 0
-                        stats = frame_data.get("tracking_stats", {})
+        t0 = time.perf_counter()
 
-                        self._draw_hud(frame, frame_idx, fps, stats)
+        # ---------------------------------------
+        # 1. DETECTION DECIMATION (SINGLE INFERENCE)
+        # ---------------------------------------
+        if frame_idx % DETECTION_INTERVAL == 0 or last_frame_data is None:
+            seg_frame, frame_data = self.seg_model.process_frame(
+                proc_frame, frame_idx, timestamp
+            )
 
-                        cv2.imshow("Pipeline Stream", frame)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
-                            self.running = False
-                    except Empty:
-                        pass
-                else:
-                    time.sleep(0.1)
+            last_frame_data = frame_data
+            last_seg_frame = seg_frame
 
-        finally:
-            self.running = False
-            for t in threads:
-                t.join(timeout=1.0)
-            cv2.destroyAllWindows()
+        else:
+            import copy
+            frame_data = copy.deepcopy(last_frame_data)
+            seg_frame = proc_frame  # fresh frame (no stale overlays)
 
+            frame_data["frame_idx"] = frame_idx
+            frame_data["timestamp"] = timestamp
 
-if __name__ == "__main__":
-    config = load_config("config.yaml")
+        # ---------------------------------------
+        # 2. EXTRACT DETECTIONS
+        # ---------------------------------------
+        raw_dets = frame_data.get("detections", [])
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--video_path", type=str, default=config["paths"]["default_video_input"])
-    parser.add_argument("--weights_path", type=str, default=config["paths"]["default_weights"])
+        # ---------------------------------------
+        # 3. PREFILTER
+        # ---------------------------------------
+        fusion_states = self.fusion.get_states()
 
-    args = parser.parse_args()
+        clean_dets, suppressed_dets, stuff_dets = self.prefilter.filter(
+            raw_dets, frame_idx, fusion_states
+        )
 
-    pipeline = AsyncPipeline(args.video_path, args.weights_path, config, show_stream=SHOW_REALTIME_STREAM)
-    pipeline.run_pipeline()
+        # ---------------------------------------
+        # 4. SEGMENTATION SKIP (fusion logic)
+        # ---------------------------------------
+        skip_ids = self.fusion.get_seg_skip_set(frame_idx)
+
+        # ---------------------------------------
+        # 5. TEMPORAL FUSION
+        # ---------------------------------------
+        outputs = self.fusion.update(
+            clean_dets,
+            suppressed_dets,
+            (H, W),
+            frame_idx,
+            skip_ids=skip_ids,
+            stuff_detections=stuff_dets
+        )
+
+        # ---------------------------------------
+        # 6. CLASS STABILIZATION
+        # ---------------------------------------
+        for det in clean_dets:
+            tid = det.get("track_id")
+            if tid is not None:
+                s_cid, s_cname = self.stabilizer.stabilize(
+                    tid,
+                    det["class_id"],
+                    det["class_name"],
+                    det["confidence"]
+                )
+
+                if tid in outputs:
+                    outputs[tid]["stable_class_name"] = s_cname
+                    outputs[tid]["stable_class_id"] = s_cid
+
+        # ---------------------------------------
+        # 7. MASK POST-PROCESS
+        # ---------------------------------------
+        outputs = project_and_fill(outputs, (H, W))
+
+        # ---------------------------------------
+        # 8. FINAL RENDER
+        # ---------------------------------------
+        seg_frame, frame_data = self.seg_model.render_fusion_outputs(
+            proc_frame, outputs, frame_idx, timestamp
+        )
+
+        # ---------------------------------------
+        # 9. TRACKING STATS (lightweight)
+        # ---------------------------------------
+        tracked_frame = self.tracker.process_frame(seg_frame, frame_data)
+
+        # ---------------------------------------
+        # 10. METRICS
+        # ---------------------------------------
+        inference_ms = (time.perf_counter() - t0) * 1000
+
+        if "tracking_stats" in frame_data:
+            frame_data["tracking_stats"]["inference_ms"] = round(inference_ms, 1)
+
+        # ---------------------------------------
+        # 11. PERIODIC LOGGING
+        # ---------------------------------------
+        if frame_idx > 0 and frame_idx % 50 == 0:
+            logger.info(
+                f"[Frame {frame_idx}] "
+                f"Fusion: {self.fusion.get_metrics()} | "
+                f"Stability: {self.stabilizer.get_stability_report()} | "
+                f"Flicker: {self.prefilter.get_flicker_stats()}"
+            )
+
+        # ---------------------------------------
+        # 12. CLEANUP
+        # ---------------------------------------
+        if frame_idx > 0 and frame_idx % 100 == 0:
+            active_ids = {
+                det.get("track_id")
+                for det in clean_dets
+                if det.get("track_id") is not None
+            }
+
+            self.fusion.cleanup(active_ids, frame_idx)
+
+            for tid in list(self.stabilizer._tracks.keys()):
+                if tid not in active_ids and tid not in self.fusion._state:
+                    self.stabilizer.reset(tid)
+
+        # ---------------------------------------
+        # OUTPUT PIPELINE
+        # ---------------------------------------
+        self.inference_queue.put((frame_idx, tracked_frame))
+        self.json_queue.put(frame_data)
+
+        if self.display_queue.empty():
+            self.display_queue.put((frame_idx, tracked_frame, frame_data))
+
+        self.capture_queue.task_done()
+        self.frames_processed += 1
+
+    self.inference_done = True
+    logger.info("Inference thread finished.")
