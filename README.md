@@ -341,6 +341,122 @@ python train.py \
 # ♻️  Resume from checkpoint
 python train.py --resume checkpoints/last.pt --epochs 200
 ```
+🖥️  VRAM   →  📦 Recommended batch size
+    6 GB   →  2–4
+    8 GB   →  6
+    12 GB  →  8
+    16 GB+ →  10–16
+```
+
+Training saves to `runs/segment/<run_name>/weights/`. Copy `best.pt` → `weights/best.pt`.
+
+**♻️ Resuming from a checkpoint:**
+
+```python
+results = model.train(data=DATA_YAML, epochs=40, resume=True)
+```
+
+---
+
+### 🔮 Social LSTM Trajectory Predictor
+
+Predicts the next **1.2 seconds** of motion for every tracked object. Runs live inside the pipeline if `modules/social_lstm/checkpoints/best.pt` exists.
+
+**📥 Get Argoverse 1** → [argoverse.org/av1.html](https://www.argoverse.org/av1.html)
+
+Place the dataset inside the Social LSTM module:
+
+```
+Quarks_hacksagon/
+└── modules/social_lstm/
+    └── data/
+        └── argoverse/                   ← 📂 unzip here
+            ├── train/data/              ← 📋 .csv scenario files
+            └── val/data/
+```
+
+**🚂 Train:**
+
+```bash
+cd modules/social_lstm
+
+python train.py \
+  --data_dir  data/argoverse/train/data \
+  --val_dir   data/argoverse/val/data   \
+  --output_dir checkpoints              \
+  --epochs 200 --batch_size 64
+
+# ♻️  Resume from checkpoint
+python train.py --resume checkpoints/last.pt --epochs 200
+```
+
+Key arguments:
+
+| 🔧 Flag | Default | 💬 Description |
+|-------|---------|--------------|
+| `--hidden_dim` | `128` | 🧠 LSTM hidden state size |
+| `--embedding_dim` | `64` | 🔢 Input embedding size |
+| `--pred_len` | `12` | ⏱️ Steps to predict (12 × 0.1 s = 1.2 s) |
+| `--lr` | `1e-3` | 📉 Adam learning rate |
+| `--nb_size` | `32.0` | 📏 Social pooling radius in metres |
+
+💾 Checkpoints: `checkpoints/last.pt` (every epoch) · `checkpoints/best.pt` (best val ADE)
+
+**🔍 Standalone inference on a tracking JSON:**
+
+```bash
+python predict.py \
+  --checkpoint   checkpoints/best.pt      \
+  --botsort_json ../../data/outputs/tracking/video_results.json \
+  --output_json  predictions.json         \
+  --pixels_per_metre 10.0
+```
+
+**🎬 Visualise predictions on video:**
+
+```bash
+python utils/visualise.py \
+  --video       ../../data/inputs/my_video.mp4 \
+  --predictions predictions.json               \
+  --output      annotated.mp4                  \
+  --pixels_per_metre 10.0 --show_samples
+```
+
+---
+
+## 📊 Evaluation — YOLOv8 on IDD
+
+`evaluate_idd.py` runs per-pixel segmentation evaluation against IDD20k II ground-truth polygons and produces metrics + visualisations.
+
+**▶️ Run:**
+
+```bash
+python evaluate_idd.py \
+  --model   weights/best.pt \
+  --images  data/idd20kII/leftImg8bit/val \
+  --gt_json data/idd20kII/gtFine/val \
+  --output  eval_yolo_results/
+```
+
+| 🔧 Arg | Default | 💬 Description |
+|--------|---------|---------------|
+| `--model` | *(required)* | Path to `best.pt` or `last.pt` |
+| `--images` | *(required)* | `leftImg8bit/val/` root |
+| `--gt_json` | *(required)* | `gtFine/val/` root |
+| `--output` | `eval_results/` | Output folder for plots + JSON |
+| `--limit` | `None` | Evaluate only first N images (quick test) |
+| `--samples` | `6` | Number of overlay comparison images to save |
+
+**📤 Outputs** written to `--output`:
+
+| 📄 File | Contents |
+|---------|---------|
+| `metrics_summary.json` | mIoU · Pixel Accuracy · Mean Class Accuracy · per-class IoU |
+| `confusion_matrix.png` | Normalised heatmap — top-15 classes by frequency |
+| `per_class_iou.png` | Bar chart of per-class IoU with mIoU line |
+| `overlays/sample_XXXX.png` | Side-by-side: input · ground truth · prediction |
+
+**📈 Current benchmark results** (`eval_yolo_results/metrics_summary.json`):
 
 Key arguments:
 
