@@ -26,6 +26,12 @@ SHOW_REALTIME_STREAM = True
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("PipelineManager")
 
+# ==========================================
+# PIPELINE CONFIGURATION
+# ==========================================
+USE_PREPROCESSING = False   # Change to False to bypass preprocessing
+# ==========================================
+
 def ensure_dirs(config):
     """Ensure that all data directories exist."""
     dirs_to_create = [
@@ -48,6 +54,7 @@ def load_config(config_path="config.yaml"):
                 'output_tracking': "data/outputs/tracking"
             },
             'pipeline': {
+                'use_preprocessing': True,
                 'preprocess_resolution': [640, 640],
                 'conf_thresh': 0.25,
                 'iou_thresh': 0.45
@@ -119,6 +126,7 @@ class AsyncPipeline:
             if not ret:
                 break
             
+<<<<<<< HEAD
             # Block and wait if the queue is full (NO FRAME SKIPPING)
             timestamp = frame_idx / float(fps)
             self.capture_queue.put((frame_idx, timestamp, frame))
@@ -127,6 +135,22 @@ class AsyncPipeline:
         self.capture_done = True
         cap.release()
         logger.info("Capture thread finished.")
+=======
+        timestamp_sec = frame_idx / float(fps)
+        
+        # 1. Preprocess (Conditional)
+        proc_frame = preprocessor.process_frame(frame) if USE_PREPROCESSING else frame
+        
+        # 2. Segmentation
+        seg_frame, frame_data = seg_model.process_frame(proc_frame, frame_idx, timestamp_sec)
+        
+        # 3. Tracking
+        tracked_frame = tracker.process_frame(seg_frame, frame_data)
+        
+        # Overlays
+        cv2.putText(tracked_frame, f"Frame: {frame_idx}/{total_frames}", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 200), 2, cv2.LINE_AA)
+>>>>>>> e1cba7dbfc0e1ba780cb2ebfdfbfc20b0a60bbd5
 
     def inference_thread(self):
         """Thread 2: Performs Inference, Preprocessing, and Rendering."""
