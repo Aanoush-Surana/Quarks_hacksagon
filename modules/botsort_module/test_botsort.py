@@ -20,8 +20,8 @@ from modules.botsort_module.schema import DetectionRecord
 # CONFIG
 # -------------------------------
 VIDEO_PATH   = r"D:\Abhay\Hacksagon_Project\CurrVideo.mp4"
-WEIGHTS_PATH = r"D:\Abhay\Hacksagon_Project\bestNew.pt"
-OUTPUT_VIDEO = "live_tracked_output_clean.mp4"
+WEIGHTS_PATH = r"D:\Abhay\Hacksagon_Project\Quarks_hacksagon\modules\weights\TrainedWeights.pt"
+OUTPUT_VIDEO = r"D:\Abhay\Hacksagon_Project\Quarks_hacksagon\modules\botsort_module\live_tracked_output_clean.mp4"
 
 
 def main():
