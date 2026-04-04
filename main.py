@@ -24,6 +24,10 @@ from modules.temporal_fusion import (
 from modules.temporal_fusion.class_stabilizer import ClassStabilizer
 from modules.temporal_fusion.mask_postprocessor import project_and_fill
 
+# Social LSTM pipeline
+from modules.tracking.social_lstm_bridge import SocialLSTMBridge
+from modules.social_lstm.models.social_lstm import SocialLSTM
+
 
 ENABLE_PREPROCESSING = False
 # --- CONFIGURATION FLAG ---
@@ -86,6 +90,7 @@ class AsyncPipeline:
         vid_name = Path(video_path).stem
         self.out_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_final.mp4")
         self.out_json_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_results.json")
+        self.out_lstm_vid_path = os.path.join(config['paths']['output_tracking'], f"{vid_name}_lstm_final.mp4")
         
         # Modules
         res = config['pipeline'].get('preprocess_resolution', [640, 640])
@@ -109,11 +114,35 @@ class AsyncPipeline:
         self.stabilizer = ClassStabilizer()
         logger.info("Temporal Fusion pipeline initialised.")
         
+        # Social LSTM components
+        self.lstm_bridge = SocialLSTMBridge()
+        self.lstm_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.social_lstm = None
+        lstm_ckpt = "modules/social_lstm/checkpoints/best.pt"
+        if os.path.exists(lstm_ckpt):
+            ckpt = torch.load(lstm_ckpt, map_location=self.lstm_device)
+            cfg = ckpt.get("cfg", {})
+            self.social_lstm = SocialLSTM(
+                embedding_dim=cfg.get("embedding_dim", 64),
+                hidden_dim=cfg.get("hidden_dim", 128),
+                pred_len=cfg.get("pred_len", 12),
+                dropout=0.0,
+                grid_size=cfg.get("grid_size", 8),
+                neighbourhood_size=cfg.get("nb_size", 32.0),
+            ).to(self.lstm_device)
+            self.social_lstm.load_state_dict(ckpt["model"])
+            self.social_lstm.eval()
+            logger.info("Social LSTM loaded successfully.")
+        else:
+            logger.warning(f"Could not find LSTM checkpoint at {lstm_ckpt}")
+        
         # Queues
         self.capture_queue = Queue(maxsize=15)
         self.inference_queue = Queue(maxsize=15)
         self.display_queue = Queue(maxsize=1) # Latest frame only for display
         self.json_queue = Queue()
+        self.lstm_queue = Queue(maxsize=15)
+        self.lstm_display_queue = Queue(maxsize=1)
         
         # Control flags
         self.running = True
@@ -261,6 +290,11 @@ class AsyncPipeline:
             self.inference_queue.put((frame_idx, tracked_frame))
             self.json_queue.put(frame_data)
             
+            try:
+                self.lstm_queue.put_nowait((frame_idx, timestamp, proc_frame.copy(), frame_data))
+            except Exception:
+                pass
+            
             # Non-blocking display queue (latest frame + stats)
             if self.display_queue.empty():
                 self.display_queue.put((frame_idx, tracked_frame, frame_data))
@@ -297,6 +331,67 @@ class AsyncPipeline:
         if not self.show_stream:
             out_vid.release()
         logger.info("Writer thread finished.")
+
+    def lstm_thread(self):
+        """Thread 5: Social LSTM Inference"""
+        logger.info("Starting LSTM Inference Thread.")
+        
+        out_lstm_vid = None
+        if not self.show_stream:
+            res = self.config['pipeline'].get('preprocess_resolution', [640, 640])
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out_lstm_vid = cv2.VideoWriter(self.out_lstm_vid_path, fourcc, 30.0, tuple(res))
+            
+        while self.running:
+            try:
+                item = self.lstm_queue.get(timeout=0.5)
+                frame_idx, timestamp, frame, frame_data = item
+            except Empty:
+                if self.inference_done and self.capture_done: break
+                continue
+                
+            if self.social_lstm is not None:
+                lstm_inputs = self.lstm_bridge.update_and_get_window(frame_idx, frame_data.get("detections", []))
+                
+                if lstm_inputs is not None:
+                    # Draw basic bounding boxes from frame_data
+                    for det in frame_data.get("detections", []):
+                        bbox = det.get("bbox")
+                        tid = det.get("track_id")
+                        c_name = det.get("class_name", "")
+                        if bbox and tid is not None and det.get("state") != "stuff":
+                            x1, y1, x2, y2 = map(int, bbox)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 255, 255), 1)
+                            cv2.putText(frame, f"ID:{tid}", (x1, max(0, y1-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,255,255), 1)
+
+                    obs = lstm_inputs["obs"].to(self.lstm_device)
+                    mask = lstm_inputs["mask"].to(self.lstm_device)
+                    
+                    with torch.no_grad():
+                        mu, sigma, rho = self.social_lstm(obs, mask)
+                    
+                    trajectories = self.lstm_bridge.convert_predictions_to_pixel(mu, lstm_inputs["context"])
+                    
+                    for tid, points in trajectories.items():
+                        for i in range(1, len(points)):
+                            pt1 = points[i-1]
+                            pt2 = points[i]
+                            # Draw past trajectory / future prediction
+                            cv2.line(frame, pt1, pt2, (0, 0, 255), 2)
+                            cv2.circle(frame, pt2, 3, (0, 255, 255), -1)
+                            
+            if self.show_stream:
+                if self.lstm_display_queue.empty():
+                    self.lstm_display_queue.put((frame_idx, frame))
+            else:
+                if out_lstm_vid is not None:
+                    out_lstm_vid.write(frame)
+                    
+            self.lstm_queue.task_done()
+            
+        if not self.show_stream and out_lstm_vid is not None:
+            out_lstm_vid.release()
+        logger.info("LSTM thread finished.")
 
     def json_thread(self):
         """Thread 4: Asynchronous JSON Data flow."""
@@ -359,7 +454,8 @@ class AsyncPipeline:
             threading.Thread(target=self.capture_thread, name="Capture"),
             threading.Thread(target=self.inference_thread, name="Inference"),
             threading.Thread(target=self.output_thread, name="Writer"),
-            threading.Thread(target=self.json_thread, name="JSON")
+            threading.Thread(target=self.json_thread, name="JSON"),
+            threading.Thread(target=self.lstm_thread, name="LSTM")
         ]
         
         for t in threads:
@@ -387,6 +483,13 @@ class AsyncPipeline:
                         self._draw_hud(frame, frame_idx, fps, stats)
                         
                         cv2.imshow("Pipeline Stream", frame)
+                        
+                        try:
+                            l_idx, l_frame = self.lstm_display_queue.get_nowait()
+                            cv2.imshow("LSTM Prediction Stream", l_frame)
+                        except Empty:
+                            pass
+                            
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             logger.info("User requested termination.")
                             self.running = False
