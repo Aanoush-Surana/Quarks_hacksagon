@@ -32,7 +32,6 @@ Programmatic usage
 
 from __future__ import annotations
 
-import argparse
 import time
 from pathlib import Path
 from typing import Optional
@@ -183,53 +182,22 @@ def run_tracking_pipeline(
 # CLI
 # ---------------------------------------------------------------------------
 
-def _build_arg_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog        = "python -m botsort_module.pipeline",
-        description = "Assign BoT-SORT track IDs to a segmentation JSON document.",
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
-    )
-    p.add_argument(
-        "--input", required=True,
-        help="Path to the input segmentation JSON (track_id = null)",
-    )
-    p.add_argument(
-        "--output", required=True,
-        help="Path to write the tracked JSON (track_id populated)",
-    )
-    p.add_argument(
-        "--video", default=None,
-        help="Source video file (optional; enables real-frame Kalman warm-up and ReID)",
-    )
-    p.add_argument(
-        "--fps", type=float, default=None,
-        help="Frame rate override (auto-detected from video or JSON metadata)",
-    )
-    p.add_argument(
-        "--cfg", default=None,
-        help="BoT-SORT YAML config path (uses bundled default if omitted)",
-    )
-    p.add_argument(
-        "--reid", action="store_true",
-        help="Enable ReID appearance matching (requires --video and model weights in cfg)",
-    )
-    p.add_argument(
-        "--quiet", action="store_true",
-        help="Suppress progress output",
-    )
-    return p
-
-
 def main() -> None:
-    args = _build_arg_parser().parse_args()
+    # ── Test Configuration ───────────────────────────────────────────────────
+    # Replace these paths with your actual test files
+    input_file = "path/to/your/segmentation.json"
+    output_file = "path/to/save/tracked.json"
+    video_file = "path/to/your/video.mp4" # Set to None to run without video
+    
+    print(f"Testing BoT-SORT pipeline locally...")
     run_tracking_pipeline(
-        input_path  = Path(args.input),
-        output_path = Path(args.output),
-        video_path  = Path(args.video) if args.video else None,
-        cfg_path    = Path(args.cfg)   if args.cfg   else None,
-        fps         = args.fps,
-        with_reid   = args.reid,
-        verbose     = not args.quiet,
+        input_path  = Path(input_file),
+        output_path = Path(output_file),
+        video_path  = Path(video_file) if video_file else None,
+        cfg_path    = None,
+        fps         = None, # Will auto-detect from video or JSON
+        with_reid   = False,
+        verbose     = True,
     )
 
 
