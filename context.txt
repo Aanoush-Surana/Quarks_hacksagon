@@ -1,0 +1,57 @@
+Project: YOLOv8 Segmentation & BoT-SORT Tracking Pipeline
+Goal for Next Agent: Modify the existing pipeline to support real-time camera input (e.g., webcam or IP camera) and real-time visualization, replacing the current file-in/file-out video processing logic.
+
+--- 1. PROJECT STRUCTURE ---
+/Quarks_hacksagon
+│   best.pt                 # (Moved to weights/best.pt)
+│   config.yaml             # Configuration file
+│   main.py                 # Main entry point for the video processing pipeline
+│   requirements.txt
+├───Data
+│   └───inputs              # Input videos are stored here
+├───modules
+│   ├───botsort_module      # Tracker logic
+│   ├───preprocess          # Preprocessor logic
+│   └───segmentation        # Inference logic
+├───weights
+│       best.pt             # YOLOv8 weights file
+
+--- 2. CURRENT PIPELINE ARCHITECTURE (main.py) ---
+The pipeline is currently driven by a `run_pipeline(video_path, weights_path, config)` function in `main.py`.
+
+It works by:
+1. Opening a video file using OpenCV: `cap = cv2.VideoCapture(video_path)`
+2. Setting up a video writer: `out_vid = cv2.VideoWriter(out_vid_path, fourcc, fps, (W, H))`
+3. Looping through the frames:
+   ```python
+   while True:
+       ret, frame = cap.read()
+       # ...
+       # 1. Preprocess
+       proc_frame = preprocessor.process_frame(frame)
+       # 2. Segmentation
+       seg_frame, frame_data = seg_model.process_frame(proc_frame, frame_idx, timestamp_sec)
+       # 3. Tracking
+       tracked_frame = tracker.process_frame(seg_frame, frame_data)
+       
+       # 4. Write Output
+       out_vid.write(tracked_frame)
+       cv2.imshow("Segmentation Stream", tracked_frame)
+   ```
+
+--- 3. KEY REQUIREMENTS FOR REAL-TIME UPGRADE ---
+1. **Camera Input**: Modify `cap = cv2.VideoCapture(video_path)` to accept a camera index (e.g., `0`) or RTSP stream URL.
+2. **Configuration Updates**: `config.yaml` and CLI arguments (in `main.py`) need to be updated to allow specifying a camera input source instead of just a video path.
+3. **Latency Optimization**: The real-time stream may face latency or buffer lag. The new logic may need to drop frames, use multithreading for `cv2.VideoCapture` to read frames in a separate thread, or optimize inference speed to ensure real-time performance.
+4. **Graceful Exit**: The script currently exits with 'q' (`cv2.waitKey(1)`). This needs to be maintained for the webcam stream. No video file writing is strictly necessary for real-time mode, but giving an option to save the feed would be a plus.
+
+--- 4. ENVIRONMENT DETAILS ---
+- OS: Windows
+- Python Environment: conda at `C:\Users\thang\miniconda3\python.exe`
+- Ultralytics version: recently updated to >=8.4.33
+- Main libraries: opencv-python (cv2), ultralytics (YOLO), PyYAML.
+
+--- 5. ACTION ITEMS FOR THE NEXT AGENT ---
+- Refactor `main.py` to handle both file inputs and live camera streams.
+- Identify and fix any bottlenecks for real-time processing.
+- Update `config.yaml` to include an option for `camera_id` or `stream_url`.

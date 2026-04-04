@@ -1,6 +1,6 @@
 paths:
-  default_video_input: 'D:\Abhay\Hacksagon_Project\CurrVideo.mp4'
-  default_weights: 'd:\Abhay\Hacksagon_Project\Quarks_hacksagon\modules\weights\TrainedWeights.pt'  # Assumes it's in the project root
+  default_video_input: "Data/inputs/videoplayback.mp4"
+  default_weights: "weights/best.pt"  # Assumes it's in the project root
   
   output_preprocess: "data/outputs/preprocess"
   output_segmentation: "data/outputs/segmentation"
