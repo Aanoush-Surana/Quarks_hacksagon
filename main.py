@@ -7,12 +7,22 @@ import time
 import cv2
 import json
 import threading
+import torch
 from queue import Queue, Empty
 from pathlib import Path
 
 from modules.preprocess.cleaner import Preprocessor
 from modules.segmentation.inference import SegmentationModel
 from modules.tracking.tracker import TrackerModule
+
+# Temporal Fusion pipeline
+from modules.temporal_fusion import (
+    TemporalMaskFusion,
+    DetectionPrefilter,
+    extract_detections_from_result,
+)
+from modules.temporal_fusion.class_stabilizer import ClassStabilizer
+from modules.temporal_fusion.mask_postprocessor import project_and_fill
 
 
 ENABLE_PREPROCESSING = False
@@ -93,6 +103,12 @@ class AsyncPipeline:
         )
         self.tracker = TrackerModule()
         
+        # Temporal Fusion modules
+        self.fusion = TemporalMaskFusion()
+        self.prefilter = DetectionPrefilter()
+        self.stabilizer = ClassStabilizer()
+        logger.info("Temporal Fusion pipeline initialised.")
+        
         # Queues
         self.capture_queue = Queue(maxsize=15)
         self.inference_queue = Queue(maxsize=15)
@@ -140,12 +156,24 @@ class AsyncPipeline:
         logger.info("Capture thread finished.")
 
     def inference_thread(self):
-        """Thread 2: Performs Inference, Preprocessing, and Rendering."""
-        logger.info("Starting High-Performance Inference Thread.")
+        """Thread 2: Temporal-Fusion inference pipeline.
+
+        Per-frame order:
+          1. Preprocess
+          2. YOLO detect + BoT-SORT  (raw result)
+          3. extract_detections_from_result
+          4. DetectionPrefilter  → clean_dets, suppressed_dets
+          5. Seg-skip check
+          6. TemporalMaskFusion.update
+          7. ClassStabilizer.stabilize
+          8. project_and_fill
+          9. render_fusion_outputs
+         10. Stats / periodic cleanup
+        """
+        logger.info("Starting Temporal-Fusion Inference Thread.")
         
         while self.running:
             try:
-                # Wait for a frame from capture queue
                 item = self.capture_queue.get(timeout=0.5)
                 frame_idx, timestamp, frame = item
             except Empty:
@@ -154,17 +182,80 @@ class AsyncPipeline:
             
             # 1. Preprocess
             proc_frame = self.preprocessor.process_frame(frame)
-            
-            # 2. Segmentation + BoT-SORT Tracking
+            H, W = proc_frame.shape[:2]
             t0 = time.perf_counter()
-            seg_frame, frame_data = self.seg_model.process_frame(proc_frame, frame_idx, timestamp)
             
-            # 3. Stats Aggregation
+            # 2. YOLO detection + BoT-SORT tracking (raw result)
+            raw_result = self.seg_model.detect(proc_frame)
+            
+            # 3. Extract detections
+            raw_dets = extract_detections_from_result(raw_result, self.seg_model.model)
+            
+            # 4. Prefilter — split into clean (→ tracker) + suppressed (→ fusion only) + stuff
+            fusion_states = self.fusion.get_states()
+            clean_dets, suppressed_dets, stuff_dets = self.prefilter.filter(
+                raw_dets, frame_idx, fusion_states
+            )
+            
+            # 5. Seg-skip check
+            skip_ids = self.fusion.get_seg_skip_set(frame_idx)
+            
+            # 6. Fusion update
+            outputs = self.fusion.update(
+                clean_dets, suppressed_dets, (H, W), frame_idx,
+                skip_ids=skip_ids, stuff_detections=stuff_dets
+            )
+            
+            # 7. Class stabilise
+            for det in clean_dets:
+                tid = det.get("track_id")
+                if tid is not None:
+                    s_cid, s_cname = self.stabilizer.stabilize(
+                        tid, det["class_id"], det["class_name"], det["confidence"]
+                    )
+                    if tid in outputs:
+                        outputs[tid]["stable_class_name"] = s_cname
+                        outputs[tid]["stable_class_id"] = s_cid
+            
+            # 8. Mask post-process (hole-fill + full-frame projection)
+            outputs = project_and_fill(outputs, (H, W))
+            
+            # 9. Render
+            seg_frame, frame_data = self.seg_model.render_fusion_outputs(
+                proc_frame, outputs, frame_idx, timestamp
+            )
+            
+            # 10. Stats aggregation (TrackerModule for unique-object counts)
             tracked_frame = self.tracker.process_frame(seg_frame, frame_data)
             inference_ms = (time.perf_counter() - t0) * 1000
             
             if "tracking_stats" in frame_data:
                 frame_data["tracking_stats"]["inference_ms"] = round(inference_ms, 1)
+            
+            # 11. Periodic diagnostics (every 50 frames)
+            if frame_idx > 0 and frame_idx % 50 == 0:
+                vram_str = ""
+                if torch.cuda.is_available():
+                    vram_mb = torch.cuda.memory_allocated() / (1024 * 1024)
+                    vram_str = f" | VRAM: {vram_mb:.0f}MB"
+                logger.info(
+                    f"[Frame {frame_idx}] Fusion: {self.fusion.get_metrics()} | "
+                    f"Stability: {self.stabilizer.get_stability_report()} | "
+                    f"Flicker: {self.prefilter.get_flicker_stats()}{vram_str}"
+                )
+            
+            # 12. Periodic cleanup (every 100 frames)
+            if frame_idx > 0 and frame_idx % 100 == 0:
+                active_ids = {
+                    det.get("track_id")
+                    for det in clean_dets
+                    if det.get("track_id") is not None
+                }
+                self.fusion.cleanup(active_ids, frame_idx)
+                # Reset stabilizer for dropped tracks
+                for tid in list(self.stabilizer._tracks.keys()):
+                    if tid not in active_ids and tid not in self.fusion._state:
+                        self.stabilizer.reset(tid)
             
             # Push to display/writer queue and json queue
             self.inference_queue.put((frame_idx, tracked_frame))

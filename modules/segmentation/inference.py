@@ -64,6 +64,26 @@ class SegmentationModel:
         c = self._PALETTE[class_id % len(self._PALETTE)]
         return (c[2], c[1], c[0])  # RGB → BGR
 
+    def detect(self, frame):
+        """Run YOLO inference + BoT-SORT tracking without rendering.
+
+        Returns the raw ultralytics Result object for downstream
+        temporal-fusion processing.
+        """
+        results = self.model.track(
+            source=frame,
+            conf=self.conf_thresh,
+            iou=self.iou_thresh,
+            imgsz=640,
+            device=self.device,
+            retina_masks=True,
+            half=self.use_half,
+            persist=True,
+            tracker="botsort.yaml",
+            verbose=False
+        )
+        return results[0]
+
     def process_frame(self, frame, frame_idx, timestamp_sec):
         """
         Optimized segmentation processing (no accuracy loss)
@@ -169,3 +189,123 @@ class SegmentationModel:
             })
 
         return final_frame, frame_data
+
+    def render_fusion_outputs(self, frame, fusion_outputs, frame_idx, timestamp_sec):
+        """Render temporal-fusion outputs onto a frame.
+
+        Args:
+            frame:           Original video frame (H, W, 3) uint8.
+            fusion_outputs:  Dict from TemporalMaskFusion.update() after
+                             project_and_fill().
+            frame_idx:       Frame index.
+            timestamp_sec:   Timestamp in seconds.
+
+        Returns:
+            (rendered_frame, frame_data_dict)
+        """
+        H, W = frame.shape[:2]
+        frame_data = {
+            "frame_id": frame_idx,
+            "timestamp_sec": timestamp_sec,
+            "detections": []
+        }
+
+        if not fusion_outputs:
+            return frame.copy(), frame_data
+
+        overlay = frame.astype(np.float32)
+
+        # Pass 1: mask overlays
+        for tid, obj in fusion_outputs.items():
+            full_mask = obj.get("full_frame_mask")
+            if full_mask is None:
+                continue
+            msk = full_mask > 127
+            if msk.sum() < 50:
+                continue
+
+            cls_name = obj.get("stable_class_name", "unknown")
+            bgr_colour = self.get_colour(obj.get("stable_class_id", 0), cls_name)
+            state = obj.get("state", "visible")
+            if state == "stuff":
+                alpha = 0.25
+            elif cls_name in (self.DRIVABLE_NAME, "drivable area"):
+                alpha = 0.60
+            elif state == "hallucinated":
+                alpha = 0.25
+            else:
+                alpha = 0.45
+            overlay[msk] = overlay[msk] * (1 - alpha) + np.array(bgr_colour, dtype=np.float32) * alpha
+
+        final_frame = overlay.astype(np.uint8)
+
+        # Pass 2: contours, bboxes, labels, JSON
+        for tid, obj in fusion_outputs.items():
+            state = obj.get("state", "visible")
+
+            # Stuff classes: no bbox, no contour, no label — mask-only
+            if state == "stuff":
+                continue
+
+            cls_name = obj.get("stable_class_name", "unknown")
+            conf = obj.get("confidence", 0.0)
+            bbox = obj.get("bbox")
+            if bbox is None:
+                continue
+
+            x1, y1, x2, y2 = map(int, bbox)
+            bgr_colour = self.get_colour(obj.get("stable_class_id", 0), cls_name)
+
+            # Contours
+            full_mask = obj.get("full_frame_mask")
+            if full_mask is not None and full_mask.any():
+                contours, _ = cv2.findContours(full_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(final_frame, contours, -1, bgr_colour, 2)
+
+            # Bbox — dashed yellow for hallucinated
+            if state == "hallucinated":
+                _draw_dashed_rect(final_frame, (x1, y1), (x2, y2), (0, 255, 255), 2, 10)
+            else:
+                cv2.rectangle(final_frame, (x1, y1), (x2, y2), bgr_colour, 2)
+
+            # Label
+            state_tag = ""
+            if state == "hallucinated":
+                state_tag = " [hall]"
+            if obj.get("seg_was_skipped", False):
+                state_tag += " [skip]"
+
+            label = f"{cls_name} #{tid} {conf:.2f}{state_tag}"
+            (tw, th), bl = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+            lbl_colour = (0, 255, 255) if state == "hallucinated" else bgr_colour
+            cv2.rectangle(final_frame, (x1, max(0, y1-th-bl-4)), (x1+tw+6, y1), lbl_colour, -1)
+            tc = (0, 0, 0) if sum(lbl_colour) > 380 else (255, 255, 255)
+            cv2.putText(final_frame, label, (x1+3, y1-bl),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, tc, 1, cv2.LINE_AA)
+
+            frame_data["detections"].append({
+                "class_id": obj.get("stable_class_id", 0),
+                "class_name": cls_name,
+                "confidence": conf,
+                "bbox": [x1, y1, x2, y2],
+                "track_id": tid,
+                "state": state,
+                "seg_was_skipped": obj.get("seg_was_skipped", False),
+                "frames_since_seen": obj.get("frames_since_seen", 0),
+            })
+
+        return final_frame, frame_data
+
+
+def _draw_dashed_rect(img, pt1, pt2, color, thickness, gap):
+    """Draw a dashed rectangle on *img*."""
+    x1, y1 = pt1
+    x2, y2 = pt2
+    for x in range(x1, x2, gap * 2):
+        cv2.line(img, (x, y1), (min(x + gap, x2), y1), color, thickness)
+    for x in range(x1, x2, gap * 2):
+        cv2.line(img, (x, y2), (min(x + gap, x2), y2), color, thickness)
+    for y in range(y1, y2, gap * 2):
+        cv2.line(img, (x1, y), (x1, min(y + gap, y2)), color, thickness)
+    for y in range(y1, y2, gap * 2):
+        cv2.line(img, (x2, y), (x2, min(y + gap, y2)), color, thickness)

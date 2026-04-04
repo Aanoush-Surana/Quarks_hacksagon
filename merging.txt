@@ -1,0 +1,55 @@
+MERGING LOG — Changes outside modules/temporal_fusion/
+======================================================
+
+FILE: modules/segmentation/inference.py
+CHANGE: Added detect() method — runs model.track() without rendering, returns raw Result object.
+REASON: Correctness — temporal fusion pipeline needs raw YOLO result to extract detections before rendering.
+
+FILE: modules/segmentation/inference.py
+CHANGE: Added render_fusion_outputs() method — renders temporal-fusion outputs with state annotations (hallucinated=dashed yellow bbox, [hall]/[skip] tags).
+REASON: Correctness — visualization must use stabilised class labels and hole-filled masks from the fusion pipeline, not raw YOLO output.
+
+FILE: modules/segmentation/inference.py
+CHANGE: Added _draw_dashed_rect() module-level helper for dashed bbox rendering.
+REASON: Correctness — hallucinated objects require visually distinct dashed bounding boxes per spec.
+
+FILE: main.py
+CHANGE: Added imports for TemporalMaskFusion, DetectionPrefilter, extract_detections_from_result, ClassStabilizer, project_and_fill, and torch.
+REASON: Correctness — temporal fusion components must be imported to instantiate and call them in the inference thread.
+
+FILE: main.py
+CHANGE: Instantiated self.fusion, self.prefilter, self.stabilizer in AsyncPipeline.__init__().
+REASON: Correctness — stateful temporal fusion objects must persist across frames; must be initialised once at pipeline start.
+
+FILE: main.py
+CHANGE: Rewired inference_thread() from 3-step (seg+track+stats) to 12-step temporal fusion pipeline (detect → extract → prefilter → seg-skip → fusion → stabilize → post-process → render → stats → diagnostics → cleanup).
+REASON: Correctness — problems 2 and 4 must be fixed before data reaches visualization/output; problem 3 is fixed in post-processing.
+
+FILE: modules/temporal_fusion/mask_postprocessor.py
+CHANGE: Removed morphological hole-fill and flood-fill logic entirely
+        also ineffective for large enclosed patches at the scale seen in this dataset.
+
+FILE: modules/temporal_fusion/helpers.py
+CHANGE: Added hard binarization step before returning mask in extract_detections_from_result.
+REASON: Correctness — ensure mask is strictly 0 or 255 with no intermediate values to prevent float masks propagating.
+
+FILE: modules/temporal_fusion/temporal_fusion_core.py
+CHANGE: Added bbox area gate (>0.4) before mask extraction in update(), dropping non-stuff detections with very large bboxes.
+REASON: Correctness — degenerate bboxes (e.g. for poles covering 40% of frame) saturate posterior.
+
+FILE: modules/temporal_fusion/temporal_fusion_core.py
+CHANGE: Added mask binarization step for stuff detections before cv2.bitwise_or merge.
+REASON: Correctness — prevent float-valued masks from accumulating to unstable mean values instead of clean 0/255.
+
+FILE: modules/temporal_fusion/temporal_fusion_core.py
+CHANGE: Cap Bayesian alpha at 0.4 and apply mean check to artificially reduce posterior (>0.6 -> * 0.85) for `stuff_adjacent_classes` (poles, etc).
+REASON: Correctness — prevent posterior saturation for thin stuff-like objects with temporally inconsistent bboxes.
+
+FILE: modules/temporal_fusion/temporal_fusion_core.py
+CHANGE: Modified alpha caps to strictly remain > 0.5 for all valid observations (both regular updates and suppressed low-trust updates).
+REASON: Bug Fix — Previous limits (e.g. `min(alpha, 0.4)` and `min(0.2, conf)`) forced alpha < 0.5, which flipped the Bayesian polarity and caused inverted masks (1s decaying and 0s boosting) for objects like poles.
+
+FILE: modules/temporal_fusion/mask_postprocessor.py
+CHANGE: Added `MORPH_OPEN` and `MORPH_CLOSE` operations using a 7x7 structural kernel to `raw_mask` in the stuff detections bypass block.
+REASON: Visual Improvement — Stuff networks yield visually jittery, unrefined boundaries frame-to-frame. Morph operations smooth mask overlaps and remove sub-component jitters for classes like Vegetation.
+

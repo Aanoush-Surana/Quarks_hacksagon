@@ -1,0 +1,857 @@
+================================================================================
+DEBUG RUN -- answering Q1-Q7
+  video : data/inputs/sample_1.mp4
+  weights: weights/best.pt
+  max frames: 25
+================================================================================
+
+================================================================================
+[Q6] posterior_threshold = 0.5
+     (default in __init__, temporal_fusion_core.py line 59)
+================================================================================
+
+================================================================================
+[Q7] Stuff classes in DetectionPrefilter : ['curb', 'drivable area', 'drivable_area', 'fallback', 'road', 'sky', 'vegetation']
+     Stuff classes in TemporalMaskFusion : ['curb', 'drivable area', 'drivable_area', 'fallback', 'road', 'sky', 'vegetation']
+     'sidewalk' in stuff_classes : False
+     'pole'     in stuff_classes : False
+     'vegetation' in stuff_classes: True
+     'fallback'   in stuff_classes: True
+     -> sidewalk & pole go through INSTANCE (Bayesian posterior) path
+     -> vegetation & fallback go through STUFF BYPASS path
+================================================================================
+
+[Q2] frame=  0  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  0  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  0  class=pole          mask min=0  max=255  mean=1.0118  shape=(1080, 1920)
+[Q1] frame=  0  class=pole          mask min=0  max=255  mean=0.1740  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=1.1101  shape=(1080, 1920)
+[Q1] frame=  0  class=pole          mask min=0  max=255  mean=0.0084  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=0.7299  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=2.3717  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=1.1348  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=5.6999  shape=(1080, 1920)
+[Q1] frame=  0  class=pole          mask min=0  max=255  mean=0.0813  shape=(1080, 1920)
+[Q1] frame=  0  class=vegetation    mask min=0  max=255  mean=2.8972  shape=(1080, 1920)
+[Q7-rt] frame=  0  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  0  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  0  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  0  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  0  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  0  class=pole          tmb64 min=0  max=255  mean=72.4036
+[Q4-pre] frame=  0  class=pole          tmb64 min=0  max=255  mean=69.2285
+[Q4-pre] frame=  0  class=pole          tmb64 min=0  max=255  mean=237.1326
+[Q4-pre] frame=  0  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  0  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  0  class=pole          full_frame_mask mean=1.0224
+[Q4-post] frame=  0  class=pole          full_frame_mask mean=0.1739
+[Q4-post] frame=  0  class=pole          full_frame_mask mean=0.1097
+[Q4-post] frame=  0  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  0  class=vegetation    full_frame_mask mean=13.2629
+[Q5] frame=  0  class=pole          ffm_mean=1.0224 (before overlay)
+[Q5] frame=  0  class=pole          ffm_mean=0.1739 (before overlay)
+[Q5] frame=  0  class=pole          ffm_mean=0.1097 (before overlay)
+[Q5] frame=  0  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  0  class=vegetation    ffm_mean=13.2629 (before overlay)
+[Q2] frame=  1  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  1  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  1  class=pole          mask min=0  max=255  mean=0.9356  shape=(1080, 1920)
+[Q1] frame=  1  class=pole          mask min=0  max=255  mean=0.1545  shape=(1080, 1920)
+[Q1] frame=  1  class=vegetation    mask min=0  max=255  mean=0.8873  shape=(1080, 1920)
+[Q1] frame=  1  class=pole          mask min=0  max=255  mean=0.0041  shape=(1080, 1920)
+[Q1] frame=  1  class=vegetation    mask min=0  max=255  mean=0.7970  shape=(1080, 1920)
+[Q1] frame=  1  class=vegetation    mask min=0  max=255  mean=1.1868  shape=(1080, 1920)
+[Q1] frame=  1  class=vegetation    mask min=0  max=255  mean=6.5563  shape=(1080, 1920)
+[Q7-rt] frame=  1  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  1  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  1  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  1  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  1  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  1  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  1  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q3] frame=  1  class=pole          alpha=0.6377  curr_mask_mean=0.2611  pre_post_mean=0.4245  post_post_mean=0.3712
+[Q3] frame=  1  class=pole          alpha=0.5117  curr_mask_mean=0.2746  pre_post_mean=0.4507  post_post_mean=0.4457
+[Q3] frame=  1  class=pole          alpha=0.4417  curr_mask_mean=0.0324  pre_post_mean=0.5327  post_post_mean=0.5865
+[Q3] frame=  1  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame=  1  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame=  1  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame=  1  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q4-pre] frame=  1  class=pole          tmb64 min=0  max=255  mean=70.9717
+[Q4-pre] frame=  1  class=pole          tmb64 min=0  max=255  mean=69.2908
+[Q4-pre] frame=  1  class=pole          tmb64 min=0  max=255  mean=246.9690
+[Q4-pre] frame=  1  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  1  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  1  class=pole          full_frame_mask mean=0.9947
+[Q4-post] frame=  1  class=pole          full_frame_mask mean=0.1529
+[Q4-post] frame=  1  class=pole          full_frame_mask mean=0.1066
+[Q4-post] frame=  1  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  1  class=vegetation    full_frame_mask mean=9.4274
+[Q5] frame=  1  class=pole          ffm_mean=0.9947 (before overlay)
+[Q5] frame=  1  class=pole          ffm_mean=0.1529 (before overlay)
+[Q5] frame=  1  class=pole          ffm_mean=0.1066 (before overlay)
+[Q5] frame=  1  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  1  class=vegetation    ffm_mean=9.4274 (before overlay)
+[Q2] frame=  2  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  2  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  2  class=pole          mask min=0  max=255  mean=0.9915  shape=(1080, 1920)
+[Q1] frame=  2  class=pole          mask min=0  max=255  mean=0.1795  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=0.6867  shape=(1080, 1920)
+[Q1] frame=  2  class=pole          mask min=0  max=255  mean=0.0054  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=0.8124  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=1.1964  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=6.1171  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=35.0774  shape=(1080, 1920)
+[Q1] frame=  2  class=vegetation    mask min=0  max=255  mean=2.8193  shape=(1080, 1920)
+[Q7-rt] frame=  2  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  2  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  2  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  2  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  2  class=pole          tmb64 min=0  max=255  mean=69.2285
+[Q4-pre] frame=  2  class=pole          tmb64 min=0  max=255  mean=69.8511
+[Q4-pre] frame=  2  class=pole          tmb64 min=0  max=255  mean=246.9690
+[Q4-pre] frame=  2  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  2  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  2  class=pole          full_frame_mask mean=0.9893
+[Q4-post] frame=  2  class=pole          full_frame_mask mean=0.1573
+[Q4-post] frame=  2  class=pole          full_frame_mask mean=0.1098
+[Q4-post] frame=  2  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  2  class=vegetation    full_frame_mask mean=43.0754
+[Q5] frame=  2  class=pole          ffm_mean=0.9893 (before overlay)
+[Q5] frame=  2  class=pole          ffm_mean=0.1573 (before overlay)
+[Q5] frame=  2  class=pole          ffm_mean=0.1098 (before overlay)
+[Q5] frame=  2  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  2  class=vegetation    ffm_mean=43.0754 (before overlay)
+[Q2] frame=  3  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  3  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  3  class=pole          mask min=0  max=255  mean=1.0209  shape=(1080, 1920)
+[Q1] frame=  3  class=pole          mask min=0  max=255  mean=0.1613  shape=(1080, 1920)
+[Q1] frame=  3  class=vegetation    mask min=0  max=255  mean=0.5629  shape=(1080, 1920)
+[Q1] frame=  3  class=pole          mask min=0  max=255  mean=0.0023  shape=(1080, 1920)
+[Q1] frame=  3  class=vegetation    mask min=0  max=255  mean=0.8707  shape=(1080, 1920)
+[Q1] frame=  3  class=vegetation    mask min=0  max=255  mean=1.2323  shape=(1080, 1920)
+[Q1] frame=  3  class=vegetation    mask min=0  max=255  mean=6.4741  shape=(1080, 1920)
+[Q7-rt] frame=  3  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  3  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  3  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  3  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  3  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  3  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  3  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  3  class=pole          tmb64 min=0  max=255  mean=69.6643
+[Q4-pre] frame=  3  class=pole          tmb64 min=0  max=255  mean=72.0300
+[Q4-pre] frame=  3  class=pole          tmb64 min=0  max=255  mean=248.0273
+[Q4-pre] frame=  3  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  3  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  3  class=pole          full_frame_mask mean=0.9756
+[Q4-post] frame=  3  class=pole          full_frame_mask mean=0.1636
+[Q4-post] frame=  3  class=pole          full_frame_mask mean=0.1166
+[Q4-post] frame=  3  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  3  class=vegetation    full_frame_mask mean=9.1400
+[Q5] frame=  3  class=pole          ffm_mean=0.9756 (before overlay)
+[Q5] frame=  3  class=pole          ffm_mean=0.1636 (before overlay)
+[Q5] frame=  3  class=pole          ffm_mean=0.1166 (before overlay)
+[Q5] frame=  3  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  3  class=vegetation    ffm_mean=9.1400 (before overlay)
+[Q2] frame=  4  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  4  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  4  class=pole          mask min=0  max=255  mean=1.0219  shape=(1080, 1920)
+[Q1] frame=  4  class=pole          mask min=0  max=255  mean=0.1599  shape=(1080, 1920)
+[Q1] frame=  4  class=vegetation    mask min=0  max=255  mean=0.5675  shape=(1080, 1920)
+[Q1] frame=  4  class=pole          mask min=0  max=255  mean=0.0023  shape=(1080, 1920)
+[Q1] frame=  4  class=vegetation    mask min=0  max=255  mean=0.8646  shape=(1080, 1920)
+[Q1] frame=  4  class=vegetation    mask min=0  max=255  mean=1.2562  shape=(1080, 1920)
+[Q1] frame=  4  class=vegetation    mask min=0  max=255  mean=6.3113  shape=(1080, 1920)
+[Q1] frame=  4  class=vegetation    mask min=0  max=255  mean=30.5212  shape=(1080, 1920)
+[Q7-rt] frame=  4  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  4  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  4  class=pole          -> SUPPRESSED (low-trust Bayesian)
+[Q7-rt] frame=  4  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  4  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  4  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  4  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  4  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  4  class=pole          tmb64 min=0  max=255  mean=70.4114
+[Q4-pre] frame=  4  class=pole          tmb64 min=0  max=255  mean=71.5942
+[Q4-pre] frame=  4  class=pole          tmb64 min=0  max=255  mean=250.3308
+[Q4-pre] frame=  4  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  4  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  4  class=pole          full_frame_mask mean=0.9881
+[Q4-post] frame=  4  class=pole          full_frame_mask mean=0.1609
+[Q4-post] frame=  4  class=pole          full_frame_mask mean=0.1158
+[Q4-post] frame=  4  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  4  class=vegetation    full_frame_mask mean=38.0598
+[Q5] frame=  4  class=pole          ffm_mean=0.9881 (before overlay)
+[Q5] frame=  4  class=pole          ffm_mean=0.1609 (before overlay)
+[Q5] frame=  4  class=pole          ffm_mean=0.1158 (before overlay)
+[Q5] frame=  4  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  4  class=vegetation    ffm_mean=38.0598 (before overlay)
+--- processed 5 frames ---
+[Q2] frame=  5  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  5  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  5  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  5  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  5  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  5  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  5  class=pole          mask min=0  max=255  mean=0.9833  shape=(1080, 1920)
+[Q1] frame=  5  class=pole          mask min=0  max=255  mean=0.1730  shape=(1080, 1920)
+[Q1] frame=  5  class=vegetation    mask min=0  max=255  mean=0.3879  shape=(1080, 1920)
+[Q1] frame=  5  class=pole          mask min=0  max=255  mean=0.0261  shape=(1080, 1920)
+[Q1] frame=  5  class=vegetation    mask min=0  max=255  mean=0.9029  shape=(1080, 1920)
+[Q1] frame=  5  class=vegetation    mask min=0  max=255  mean=1.3414  shape=(1080, 1920)
+[Q7-rt] frame=  5  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  5  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  5  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  5  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  5  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  5  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q3] frame=  5  class=pole          alpha=0.7993  curr_mask_mean=0.2702  pre_post_mean=0.2868  post_post_mean=0.2787
+[Q3] frame=  5  class=pole          alpha=0.5757  curr_mask_mean=0.2900  pre_post_mean=0.3757  post_post_mean=0.3563
+[Q3] frame=  5  class=pole          alpha=0.4580  curr_mask_mean=0.2244  pre_post_mean=0.8640  post_post_mean=0.8730
+[Q3] frame=  5  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame=  5  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame=  5  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q4-pre] frame=  5  class=pole          tmb64 min=0  max=255  mean=70.5359
+[Q4-pre] frame=  5  class=pole          tmb64 min=0  max=255  mean=71.4697
+[Q4-pre] frame=  5  class=pole          tmb64 min=0  max=255  mean=250.2686
+[Q4-pre] frame=  5  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  5  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  5  class=pole          full_frame_mask mean=1.0038
+[Q4-post] frame=  5  class=pole          full_frame_mask mean=0.1654
+[Q4-post] frame=  5  class=pole          full_frame_mask mean=0.1140
+[Q4-post] frame=  5  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  5  class=vegetation    full_frame_mask mean=2.6321
+[Q5] frame=  5  class=pole          ffm_mean=1.0038 (before overlay)
+[Q5] frame=  5  class=pole          ffm_mean=0.1654 (before overlay)
+[Q5] frame=  5  class=pole          ffm_mean=0.1140 (before overlay)
+[Q5] frame=  5  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  5  class=vegetation    ffm_mean=2.6321 (before overlay)
+[Q2] frame=  6  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  6  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  6  class=pole          mask min=0  max=255  mean=0.9443  shape=(1080, 1920)
+[Q1] frame=  6  class=pole          mask min=0  max=255  mean=0.1729  shape=(1080, 1920)
+[Q1] frame=  6  class=pole          mask min=0  max=255  mean=0.0342  shape=(1080, 1920)
+[Q1] frame=  6  class=vegetation    mask min=0  max=255  mean=0.9289  shape=(1080, 1920)
+[Q1] frame=  6  class=vegetation    mask min=0  max=255  mean=1.2554  shape=(1080, 1920)
+[Q1] frame=  6  class=vegetation    mask min=0  max=255  mean=2.3584  shape=(1080, 1920)
+[Q1] frame=  6  class=vegetation    mask min=0  max=255  mean=22.2321  shape=(1080, 1920)
+[Q7-rt] frame=  6  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  6  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  6  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  6  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  6  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  6  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  6  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  6  class=pole          tmb64 min=0  max=255  mean=69.4153
+[Q4-pre] frame=  6  class=pole          tmb64 min=0  max=255  mean=71.1584
+[Q4-pre] frame=  6  class=pole          tmb64 min=0  max=255  mean=250.2686
+[Q4-pre] frame=  6  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  6  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  6  class=pole          full_frame_mask mean=0.9993
+[Q4-post] frame=  6  class=pole          full_frame_mask mean=0.1719
+[Q4-post] frame=  6  class=pole          full_frame_mask mean=0.1099
+[Q4-post] frame=  6  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  6  class=vegetation    full_frame_mask mean=26.7329
+[Q5] frame=  6  class=pole          ffm_mean=0.9993 (before overlay)
+[Q5] frame=  6  class=pole          ffm_mean=0.1719 (before overlay)
+[Q5] frame=  6  class=pole          ffm_mean=0.1099 (before overlay)
+[Q5] frame=  6  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  6  class=vegetation    ffm_mean=26.7329 (before overlay)
+[Q2] frame=  7  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  7  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  7  class=pole          mask min=0  max=255  mean=0.9350  shape=(1080, 1920)
+[Q1] frame=  7  class=pole          mask min=0  max=255  mean=0.1711  shape=(1080, 1920)
+[Q1] frame=  7  class=pole          mask min=0  max=255  mean=0.0343  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=0.9210  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=1.2526  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=1.3059  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=7.6006  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=2.3739  shape=(1080, 1920)
+[Q1] frame=  7  class=vegetation    mask min=0  max=255  mean=21.0964  shape=(1080, 1920)
+[Q7-rt] frame=  7  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  7  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  7  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  7  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  7  class=pole          tmb64 min=0  max=255  mean=68.6060
+[Q4-pre] frame=  7  class=pole          tmb64 min=0  max=255  mean=72.4036
+[Q4-pre] frame=  7  class=pole          tmb64 min=0  max=255  mean=250.2686
+[Q4-pre] frame=  7  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  7  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  7  class=pole          full_frame_mask mean=0.9499
+[Q4-post] frame=  7  class=pole          full_frame_mask mean=0.1775
+[Q4-post] frame=  7  class=pole          full_frame_mask mean=0.1099
+[Q4-post] frame=  7  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  7  class=vegetation    full_frame_mask mean=27.8041
+[Q5] frame=  7  class=pole          ffm_mean=0.9499 (before overlay)
+[Q5] frame=  7  class=pole          ffm_mean=0.1775 (before overlay)
+[Q5] frame=  7  class=pole          ffm_mean=0.1099 (before overlay)
+[Q5] frame=  7  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  7  class=vegetation    ffm_mean=27.8041 (before overlay)
+[Q2] frame=  8  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  8  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  8  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  8  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  8  class=pole          mask min=0  max=255  mean=1.0500  shape=(1080, 1920)
+[Q1] frame=  8  class=pole          mask min=0  max=255  mean=0.1802  shape=(1080, 1920)
+[Q1] frame=  8  class=pole          mask min=0  max=255  mean=0.0601  shape=(1080, 1920)
+[Q1] frame=  8  class=vegetation    mask min=0  max=255  mean=0.8263  shape=(1080, 1920)
+[Q7-rt] frame=  8  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  8  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  8  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  8  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  8  class=pole          tmb64 min=0  max=255  mean=68.2947
+[Q4-pre] frame=  8  class=pole          tmb64 min=0  max=255  mean=72.2791
+[Q4-pre] frame=  8  class=pole          tmb64 min=0  max=255  mean=250.2686
+[Q4-pre] frame=  8  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  8  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  8  class=pole          full_frame_mask mean=0.9774
+[Q4-post] frame=  8  class=pole          full_frame_mask mean=0.1759
+[Q4-post] frame=  8  class=pole          full_frame_mask mean=0.1134
+[Q4-post] frame=  8  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  8  class=vegetation    full_frame_mask mean=0.8263
+[Q5] frame=  8  class=pole          ffm_mean=0.9774 (before overlay)
+[Q5] frame=  8  class=pole          ffm_mean=0.1759 (before overlay)
+[Q5] frame=  8  class=pole          ffm_mean=0.1134 (before overlay)
+[Q5] frame=  8  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  8  class=vegetation    ffm_mean=0.8263 (before overlay)
+[Q2] frame=  9  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  9  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  9  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  9  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame=  9  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame=  9  class=pole          mask min=0  max=255  mean=1.0247  shape=(1080, 1920)
+[Q1] frame=  9  class=pole          mask min=0  max=255  mean=0.1786  shape=(1080, 1920)
+[Q1] frame=  9  class=pole          mask min=0  max=255  mean=0.0696  shape=(1080, 1920)
+[Q1] frame=  9  class=vegetation    mask min=0  max=255  mean=0.9164  shape=(1080, 1920)
+[Q1] frame=  9  class=vegetation    mask min=0  max=255  mean=1.3396  shape=(1080, 1920)
+[Q7-rt] frame=  9  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  9  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  9  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame=  9  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame=  9  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame=  9  class=pole          tmb64 min=0  max=255  mean=68.7927
+[Q4-pre] frame=  9  class=pole          tmb64 min=0  max=255  mean=70.4736
+[Q4-pre] frame=  9  class=pole          tmb64 min=0  max=255  mean=250.2063
+[Q4-pre] frame=  9  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame=  9  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame=  9  class=pole          full_frame_mask mean=0.9940
+[Q4-post] frame=  9  class=pole          full_frame_mask mean=0.1772
+[Q4-post] frame=  9  class=pole          full_frame_mask mean=0.1323
+[Q4-post] frame=  9  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame=  9  class=vegetation    full_frame_mask mean=2.2560
+[Q5] frame=  9  class=pole          ffm_mean=0.9940 (before overlay)
+[Q5] frame=  9  class=pole          ffm_mean=0.1772 (before overlay)
+[Q5] frame=  9  class=pole          ffm_mean=0.1323 (before overlay)
+[Q5] frame=  9  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame=  9  class=vegetation    ffm_mean=2.2560 (before overlay)
+--- processed 10 frames ---
+[Q2] frame= 10  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 10  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 10  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 10  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 10  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 10  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 10  class=pole          mask min=0  max=255  mean=1.0259  shape=(1080, 1920)
+[Q1] frame= 10  class=pole          mask min=0  max=255  mean=0.2127  shape=(1080, 1920)
+[Q1] frame= 10  class=pole          mask min=0  max=255  mean=0.0667  shape=(1080, 1920)
+[Q1] frame= 10  class=vegetation    mask min=0  max=255  mean=0.8618  shape=(1080, 1920)
+[Q1] frame= 10  class=vegetation    mask min=0  max=255  mean=1.2440  shape=(1080, 1920)
+[Q1] frame= 10  class=vegetation    mask min=0  max=255  mean=28.3642  shape=(1080, 1920)
+[Q7-rt] frame= 10  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 10  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 10  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 10  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 10  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 10  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q3] frame= 10  class=pole          alpha=0.6992  curr_mask_mean=0.2618  pre_post_mean=0.2692  post_post_mean=0.2688
+[Q3] frame= 10  class=pole          alpha=0.5547  curr_mask_mean=0.3277  pre_post_mean=0.2964  post_post_mean=0.2951
+[Q3] frame= 10  class=pole          alpha=0.3960  curr_mask_mean=0.5070  pre_post_mean=0.8679  post_post_mean=0.8679
+[Q3] frame= 10  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame= 10  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q3] frame= 10  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q4-pre] frame= 10  class=pole          tmb64 min=0  max=255  mean=68.4192
+[Q4-pre] frame= 10  class=pole          tmb64 min=0  max=255  mean=71.4697
+[Q4-pre] frame= 10  class=pole          tmb64 min=0  max=255  mean=250.2063
+[Q4-pre] frame= 10  class=pole          tmb64 min=0  max=255  mean=225.1794
+[Q4-pre] frame= 10  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 10  class=pole          full_frame_mask mean=1.0238
+[Q4-post] frame= 10  class=pole          full_frame_mask mean=0.1824
+[Q4-post] frame= 10  class=pole          full_frame_mask mean=0.1359
+[Q4-post] frame= 10  class=pole          full_frame_mask mean=0.6081
+[Q4-post] frame= 10  class=vegetation    full_frame_mask mean=30.4700
+[Q5] frame= 10  class=pole          ffm_mean=1.0238 (before overlay)
+[Q5] frame= 10  class=pole          ffm_mean=0.1824 (before overlay)
+[Q5] frame= 10  class=pole          ffm_mean=0.1359 (before overlay)
+[Q5] frame= 10  class=pole          ffm_mean=0.6081 (before overlay)
+[Q5] frame= 10  class=vegetation    ffm_mean=30.4700 (before overlay)
+[Q2] frame= 11  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 11  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 11  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 11  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 11  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 11  class=pole          mask min=0  max=255  mean=0.9765  shape=(1080, 1920)
+[Q1] frame= 11  class=pole          mask min=0  max=255  mean=0.1692  shape=(1080, 1920)
+[Q1] frame= 11  class=pole          mask min=0  max=255  mean=0.0746  shape=(1080, 1920)
+[Q1] frame= 11  class=vegetation    mask min=0  max=255  mean=1.2942  shape=(1080, 1920)
+[Q1] frame= 11  class=vegetation    mask min=0  max=255  mean=30.4526  shape=(1080, 1920)
+[Q7-rt] frame= 11  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 11  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 11  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 11  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 11  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 11  class=pole          tmb64 min=0  max=255  mean=68.4814
+[Q4-pre] frame= 11  class=pole          tmb64 min=0  max=255  mean=71.2207
+[Q4-pre] frame= 11  class=pole          tmb64 min=0  max=255  mean=250.2063
+[Q4-pre] frame= 11  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 11  class=pole          full_frame_mask mean=1.0175
+[Q4-post] frame= 11  class=pole          full_frame_mask mean=0.1841
+[Q4-post] frame= 11  class=pole          full_frame_mask mean=0.1284
+[Q4-post] frame= 11  class=vegetation    full_frame_mask mean=31.7467
+[Q5] frame= 11  class=pole          ffm_mean=1.0175 (before overlay)
+[Q5] frame= 11  class=pole          ffm_mean=0.1841 (before overlay)
+[Q5] frame= 11  class=pole          ffm_mean=0.1284 (before overlay)
+[Q5] frame= 11  class=vegetation    ffm_mean=31.7467 (before overlay)
+[Q2] frame= 12  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 12  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 12  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 12  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 12  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 12  class=pole          mask min=0  max=255  mean=1.0680  shape=(1080, 1920)
+[Q1] frame= 12  class=pole          mask min=0  max=255  mean=0.1504  shape=(1080, 1920)
+[Q1] frame= 12  class=pole          mask min=0  max=255  mean=0.0796  shape=(1080, 1920)
+[Q1] frame= 12  class=vegetation    mask min=0  max=255  mean=1.1825  shape=(1080, 1920)
+[Q1] frame= 12  class=vegetation    mask min=0  max=255  mean=1.0593  shape=(1080, 1920)
+[Q7-rt] frame= 12  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 12  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 12  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 12  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 12  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 12  class=pole          tmb64 min=0  max=255  mean=68.6060
+[Q4-pre] frame= 12  class=pole          tmb64 min=0  max=255  mean=71.3452
+[Q4-pre] frame= 12  class=pole          tmb64 min=0  max=255  mean=250.2063
+[Q4-pre] frame= 12  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 12  class=pole          full_frame_mask mean=0.9968
+[Q4-post] frame= 12  class=pole          full_frame_mask mean=0.1750
+[Q4-post] frame= 12  class=pole          full_frame_mask mean=0.1302
+[Q4-post] frame= 12  class=vegetation    full_frame_mask mean=2.2418
+[Q5] frame= 12  class=pole          ffm_mean=0.9968 (before overlay)
+[Q5] frame= 12  class=pole          ffm_mean=0.1750 (before overlay)
+[Q5] frame= 12  class=pole          ffm_mean=0.1302 (before overlay)
+[Q5] frame= 12  class=vegetation    ffm_mean=2.2418 (before overlay)
+[Q2] frame= 13  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 13  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 13  class=pole          mask min=0  max=255  mean=0.9840  shape=(1080, 1920)
+[Q1] frame= 13  class=pole          mask min=0  max=255  mean=0.1654  shape=(1080, 1920)
+[Q1] frame= 13  class=pole          mask min=0  max=255  mean=0.0888  shape=(1080, 1920)
+[Q1] frame= 13  class=vegetation    mask min=0  max=255  mean=1.3179  shape=(1080, 1920)
+[Q1] frame= 13  class=vegetation    mask min=0  max=255  mean=0.7895  shape=(1080, 1920)
+[Q1] frame= 13  class=vegetation    mask min=0  max=255  mean=0.9828  shape=(1080, 1920)
+[Q1] frame= 13  class=vegetation    mask min=0  max=255  mean=3.3991  shape=(1080, 1920)
+[Q7-rt] frame= 13  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 13  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 13  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 13  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 13  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 13  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 13  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 13  class=pole          tmb64 min=0  max=255  mean=68.3569
+[Q4-pre] frame= 13  class=pole          tmb64 min=0  max=255  mean=70.5359
+[Q4-pre] frame= 13  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 13  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 13  class=pole          full_frame_mask mean=1.0348
+[Q4-post] frame= 13  class=pole          full_frame_mask mean=0.1810
+[Q4-post] frame= 13  class=pole          full_frame_mask mean=0.1284
+[Q4-post] frame= 13  class=vegetation    full_frame_mask mean=6.4484
+[Q5] frame= 13  class=pole          ffm_mean=1.0348 (before overlay)
+[Q5] frame= 13  class=pole          ffm_mean=0.1810 (before overlay)
+[Q5] frame= 13  class=pole          ffm_mean=0.1284 (before overlay)
+[Q5] frame= 13  class=vegetation    ffm_mean=6.4484 (before overlay)
+[Q2] frame= 14  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 14  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 14  class=pole          mask min=0  max=255  mean=1.0035  shape=(1080, 1920)
+[Q1] frame= 14  class=pole          mask min=0  max=255  mean=0.1596  shape=(1080, 1920)
+[Q1] frame= 14  class=pole          mask min=0  max=255  mean=0.0818  shape=(1080, 1920)
+[Q1] frame= 14  class=vegetation    mask min=0  max=255  mean=1.3403  shape=(1080, 1920)
+[Q1] frame= 14  class=vegetation    mask min=0  max=255  mean=0.9639  shape=(1080, 1920)
+[Q1] frame= 14  class=vegetation    mask min=0  max=255  mean=0.8008  shape=(1080, 1920)
+[Q1] frame= 14  class=vegetation    mask min=0  max=255  mean=24.8645  shape=(1080, 1920)
+[Q7-rt] frame= 14  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 14  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 14  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 14  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 14  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 14  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 14  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 14  class=pole          tmb64 min=0  max=255  mean=68.1079
+[Q4-pre] frame= 14  class=pole          tmb64 min=0  max=255  mean=69.2285
+[Q4-pre] frame= 14  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 14  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 14  class=pole          full_frame_mask mean=1.0111
+[Q4-post] frame= 14  class=pole          full_frame_mask mean=0.1787
+[Q4-post] frame= 14  class=pole          full_frame_mask mean=0.1058
+[Q4-post] frame= 14  class=vegetation    full_frame_mask mean=27.9695
+[Q5] frame= 14  class=pole          ffm_mean=1.0111 (before overlay)
+[Q5] frame= 14  class=pole          ffm_mean=0.1787 (before overlay)
+[Q5] frame= 14  class=pole          ffm_mean=0.1058 (before overlay)
+[Q5] frame= 14  class=vegetation    ffm_mean=27.9695 (before overlay)
+--- processed 15 frames ---
+[Q2] frame= 15  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 15  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 15  class=pole          mask min=0  max=255  mean=1.0030  shape=(1080, 1920)
+[Q1] frame= 15  class=pole          mask min=0  max=255  mean=0.1676  shape=(1080, 1920)
+[Q1] frame= 15  class=pole          mask min=0  max=255  mean=0.0753  shape=(1080, 1920)
+[Q1] frame= 15  class=vegetation    mask min=0  max=255  mean=1.4929  shape=(1080, 1920)
+[Q1] frame= 15  class=vegetation    mask min=0  max=255  mean=1.0059  shape=(1080, 1920)
+[Q1] frame= 15  class=vegetation    mask min=0  max=255  mean=0.9925  shape=(1080, 1920)
+[Q1] frame= 15  class=vegetation    mask min=0  max=255  mean=19.7291  shape=(1080, 1920)
+[Q1] frame= 15  class=vegetation    mask min=0  max=255  mean=1.4082  shape=(1080, 1920)
+[Q7-rt] frame= 15  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 15  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 15  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 15  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 15  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 15  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 15  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 15  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 15  class=pole          tmb64 min=0  max=255  mean=68.0457
+[Q4-pre] frame= 15  class=pole          tmb64 min=0  max=255  mean=67.6721
+[Q4-pre] frame= 15  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 15  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 15  class=pole          full_frame_mask mean=1.0027
+[Q4-post] frame= 15  class=pole          full_frame_mask mean=0.1784
+[Q4-post] frame= 15  class=pole          full_frame_mask mean=0.1029
+[Q4-post] frame= 15  class=vegetation    full_frame_mask mean=24.6286
+[Q5] frame= 15  class=pole          ffm_mean=1.0027 (before overlay)
+[Q5] frame= 15  class=pole          ffm_mean=0.1784 (before overlay)
+[Q5] frame= 15  class=pole          ffm_mean=0.1029 (before overlay)
+[Q5] frame= 15  class=vegetation    ffm_mean=24.6286 (before overlay)
+[Q2] frame= 16  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 16  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 16  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 16  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 16  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 16  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 16  class=pole          mask min=0  max=255  mean=1.0377  shape=(1080, 1920)
+[Q1] frame= 16  class=pole          mask min=0  max=255  mean=0.1658  shape=(1080, 1920)
+[Q1] frame= 16  class=pole          mask min=0  max=255  mean=0.0697  shape=(1080, 1920)
+[Q1] frame= 16  class=vegetation    mask min=0  max=255  mean=1.3216  shape=(1080, 1920)
+[Q1] frame= 16  class=vegetation    mask min=0  max=255  mean=1.0822  shape=(1080, 1920)
+[Q1] frame= 16  class=vegetation    mask min=0  max=255  mean=18.9805  shape=(1080, 1920)
+[Q7-rt] frame= 16  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 16  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 16  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 16  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 16  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 16  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 16  class=pole          tmb64 min=0  max=255  mean=67.2986
+[Q4-pre] frame= 16  class=pole          tmb64 min=0  max=255  mean=65.1819
+[Q4-pre] frame= 16  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 16  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 16  class=pole          full_frame_mask mean=0.9818
+[Q4-post] frame= 16  class=pole          full_frame_mask mean=0.1695
+[Q4-post] frame= 16  class=pole          full_frame_mask mean=0.0908
+[Q4-post] frame= 16  class=vegetation    full_frame_mask mean=21.3843
+[Q5] frame= 16  class=pole          ffm_mean=0.9818 (before overlay)
+[Q5] frame= 16  class=pole          ffm_mean=0.1695 (before overlay)
+[Q5] frame= 16  class=pole          ffm_mean=0.0908 (before overlay)
+[Q5] frame= 16  class=vegetation    ffm_mean=21.3843 (before overlay)
+[Q2] frame= 17  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 17  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 17  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 17  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 17  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 17  class=pole          mask min=0  max=255  mean=1.0768  shape=(1080, 1920)
+[Q1] frame= 17  class=pole          mask min=0  max=255  mean=0.1366  shape=(1080, 1920)
+[Q1] frame= 17  class=pole          mask min=0  max=255  mean=0.0621  shape=(1080, 1920)
+[Q1] frame= 17  class=vegetation    mask min=0  max=255  mean=1.6091  shape=(1080, 1920)
+[Q1] frame= 17  class=vegetation    mask min=0  max=255  mean=18.7775  shape=(1080, 1920)
+[Q7-rt] frame= 17  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 17  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 17  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 17  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 17  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 17  class=pole          tmb64 min=0  max=255  mean=67.9211
+[Q4-pre] frame= 17  class=pole          tmb64 min=0  max=255  mean=64.8706
+[Q4-pre] frame= 17  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 17  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 17  class=pole          full_frame_mask mean=1.0438
+[Q4-post] frame= 17  class=pole          full_frame_mask mean=0.1597
+[Q4-post] frame= 17  class=pole          full_frame_mask mean=0.1433
+[Q4-post] frame= 17  class=vegetation    full_frame_mask mean=20.3866
+[Q5] frame= 17  class=pole          ffm_mean=1.0438 (before overlay)
+[Q5] frame= 17  class=pole          ffm_mean=0.1597 (before overlay)
+[Q5] frame= 17  class=pole          ffm_mean=0.1433 (before overlay)
+[Q5] frame= 17  class=vegetation    ffm_mean=20.3866 (before overlay)
+[Q2] frame= 18  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 18  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 18  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 18  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 18  class=pole          mask min=0  max=255  mean=1.1065  shape=(1080, 1920)
+[Q1] frame= 18  class=pole          mask min=0  max=255  mean=0.1574  shape=(1080, 1920)
+[Q1] frame= 18  class=pole          mask min=0  max=255  mean=0.0553  shape=(1080, 1920)
+[Q1] frame= 18  class=vegetation    mask min=0  max=255  mean=25.7819  shape=(1080, 1920)
+[Q7-rt] frame= 18  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 18  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 18  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 18  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 18  class=pole          tmb64 min=0  max=255  mean=67.9211
+[Q4-pre] frame= 18  class=pole          tmb64 min=0  max=255  mean=64.4348
+[Q4-pre] frame= 18  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 18  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 18  class=pole          full_frame_mask mean=1.0498
+[Q4-post] frame= 18  class=pole          full_frame_mask mean=0.1639
+[Q4-post] frame= 18  class=pole          full_frame_mask mean=0.1455
+[Q4-post] frame= 18  class=vegetation    full_frame_mask mean=25.7819
+[Q5] frame= 18  class=pole          ffm_mean=1.0498 (before overlay)
+[Q5] frame= 18  class=pole          ffm_mean=0.1639 (before overlay)
+[Q5] frame= 18  class=pole          ffm_mean=0.1455 (before overlay)
+[Q5] frame= 18  class=vegetation    ffm_mean=25.7819 (before overlay)
+[Q2] frame= 19  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 19  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 19  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 19  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 19  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 19  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 19  class=pole          mask min=0  max=255  mean=1.0854  shape=(1080, 1920)
+[Q1] frame= 19  class=pole          mask min=0  max=255  mean=0.1846  shape=(1080, 1920)
+[Q1] frame= 19  class=pole          mask min=0  max=255  mean=0.0483  shape=(1080, 1920)
+[Q1] frame= 19  class=vegetation    mask min=0  max=255  mean=33.0182  shape=(1080, 1920)
+[Q1] frame= 19  class=vegetation    mask min=0  max=255  mean=1.1467  shape=(1080, 1920)
+[Q1] frame= 19  class=vegetation    mask min=0  max=255  mean=1.4100  shape=(1080, 1920)
+[Q7-rt] frame= 19  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 19  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 19  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 19  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 19  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 19  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 19  class=pole          tmb64 min=0  max=255  mean=67.9834
+[Q4-pre] frame= 19  class=pole          tmb64 min=0  max=255  mean=66.2402
+[Q4-pre] frame= 19  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 19  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 19  class=pole          full_frame_mask mean=1.0433
+[Q4-post] frame= 19  class=pole          full_frame_mask mean=0.1714
+[Q4-post] frame= 19  class=pole          full_frame_mask mean=0.1622
+[Q4-post] frame= 19  class=vegetation    full_frame_mask mean=35.5749
+[Q5] frame= 19  class=pole          ffm_mean=1.0433 (before overlay)
+[Q5] frame= 19  class=pole          ffm_mean=0.1714 (before overlay)
+[Q5] frame= 19  class=pole          ffm_mean=0.1622 (before overlay)
+[Q5] frame= 19  class=vegetation    ffm_mean=35.5749 (before overlay)
+--- processed 20 frames ---
+[Q2] frame= 20  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 20  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 20  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 20  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 20  class=sidewalk      raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 20  class=pole          mask min=0  max=255  mean=1.1632  shape=(1080, 1920)
+[Q1] frame= 20  class=pole          mask min=0  max=255  mean=0.2195  shape=(1080, 1920)
+[Q1] frame= 20  class=pole          mask min=0  max=255  mean=0.0414  shape=(1080, 1920)
+[Q1] frame= 20  class=vegetation    mask min=0  max=255  mean=32.9438  shape=(1080, 1920)
+[Q1] frame= 20  class=sidewalk      mask min=0  max=255  mean=5.3185  shape=(1080, 1920)
+[Q7-rt] frame= 20  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 20  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 20  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 20  class=sidewalk      -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 20  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q3] frame= 20  class=pole          alpha=0.5498  curr_mask_mean=0.2973  pre_post_mean=0.2669  post_post_mean=0.2674
+[Q3] frame= 20  class=pole          alpha=0.6021  curr_mask_mean=0.3209  pre_post_mean=0.2604  post_post_mean=0.2646
+[Q3] frame= 20  class=pole          alpha=0.4321  curr_mask_mean=0.4204  pre_post_mean=0.8659  post_post_mean=0.8659
+[Q3] frame= 20  class=sidewalk      alpha=0.4436  curr_mask_mean=0.2698  pre_post_mean=0.5000  post_post_mean=0.5260
+[Q3] frame= 20  class=vegetation    -> STUFF bypass, no Bayesian update
+[Q4-pre] frame= 20  class=pole          tmb64 min=0  max=255  mean=68.0457
+[Q4-pre] frame= 20  class=pole          tmb64 min=0  max=255  mean=67.4231
+[Q4-pre] frame= 20  class=pole          tmb64 min=0  max=255  mean=250.1440
+[Q4-pre] frame= 20  class=sidewalk      tmb64 min=0  max=255  mean=186.3318
+[Q4-pre] frame= 20  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 20  class=pole          full_frame_mask mean=1.0366
+[Q4-post] frame= 20  class=pole          full_frame_mask mean=0.1800
+[Q4-post] frame= 20  class=pole          full_frame_mask mean=0.1508
+[Q4-post] frame= 20  class=sidewalk      full_frame_mask mean=14.4221
+[Q4-post] frame= 20  class=vegetation    full_frame_mask mean=32.9438
+[Q5] frame= 20  class=pole          ffm_mean=1.0366 (before overlay)
+[Q5] frame= 20  class=pole          ffm_mean=0.1800 (before overlay)
+[Q5] frame= 20  class=pole          ffm_mean=0.1508 (before overlay)
+[Q5] frame= 20  class=sidewalk      ffm_mean=14.4221 (before overlay)
+[Q5] frame= 20  class=vegetation    ffm_mean=32.9438 (before overlay)
+[Q2] frame= 21  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=sidewalk      raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 21  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 21  class=pole          mask min=0  max=255  mean=1.0675  shape=(1080, 1920)
+[Q1] frame= 21  class=pole          mask min=0  max=255  mean=0.1349  shape=(1080, 1920)
+[Q1] frame= 21  class=pole          mask min=0  max=255  mean=0.0353  shape=(1080, 1920)
+[Q1] frame= 21  class=vegetation    mask min=0  max=255  mean=31.9610  shape=(1080, 1920)
+[Q1] frame= 21  class=sidewalk      mask min=0  max=255  mean=4.3729  shape=(1080, 1920)
+[Q1] frame= 21  class=vegetation    mask min=0  max=255  mean=1.3462  shape=(1080, 1920)
+[Q1] frame= 21  class=vegetation    mask min=0  max=255  mean=1.3947  shape=(1080, 1920)
+[Q7-rt] frame= 21  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 21  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 21  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 21  class=sidewalk      -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 21  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 21  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q7-rt] frame= 21  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 21  class=pole          tmb64 min=0  max=255  mean=68.3569
+[Q4-pre] frame= 21  class=pole          tmb64 min=0  max=255  mean=67.3608
+[Q4-pre] frame= 21  class=pole          tmb64 min=0  max=255  mean=250.3931
+[Q4-pre] frame= 21  class=sidewalk      tmb64 min=0  max=255  mean=198.1604
+[Q4-pre] frame= 21  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 21  class=pole          full_frame_mask mean=1.0517
+[Q4-post] frame= 21  class=pole          full_frame_mask mean=0.1691
+[Q4-post] frame= 21  class=pole          full_frame_mask mean=0.1433
+[Q4-post] frame= 21  class=sidewalk      full_frame_mask mean=15.2167
+[Q4-post] frame= 21  class=vegetation    full_frame_mask mean=34.7018
+[Q5] frame= 21  class=pole          ffm_mean=1.0517 (before overlay)
+[Q5] frame= 21  class=pole          ffm_mean=0.1691 (before overlay)
+[Q5] frame= 21  class=pole          ffm_mean=0.1433 (before overlay)
+[Q5] frame= 21  class=sidewalk      ffm_mean=15.2167 (before overlay)
+[Q5] frame= 21  class=vegetation    ffm_mean=34.7018 (before overlay)
+[Q2] frame= 22  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 22  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 22  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 22  class=vegetation    raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 22  class=pole          mask min=0  max=255  mean=1.0762  shape=(1080, 1920)
+[Q1] frame= 22  class=pole          mask min=0  max=255  mean=0.1251  shape=(1080, 1920)
+[Q1] frame= 22  class=pole          mask min=0  max=255  mean=0.0269  shape=(1080, 1920)
+[Q1] frame= 22  class=vegetation    mask min=0  max=255  mean=31.2288  shape=(1080, 1920)
+[Q7-rt] frame= 22  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 22  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 22  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 22  class=vegetation    -> STUFF (bypass, no Bayesian)
+[Q4-pre] frame= 22  class=pole          tmb64 min=0  max=255  mean=68.2947
+[Q4-pre] frame= 22  class=pole          tmb64 min=0  max=255  mean=66.1157
+[Q4-pre] frame= 22  class=pole          tmb64 min=0  max=255  mean=250.3931
+[Q4-pre] frame= 22  class=sidewalk      tmb64 min=0  max=255  mean=198.1604
+[Q4-pre] frame= 22  class=vegetation    tmb64=None (stuff bypass)
+[Q4-post] frame= 22  class=pole          full_frame_mask mean=1.0592
+[Q4-post] frame= 22  class=pole          full_frame_mask mean=0.1675
+[Q4-post] frame= 22  class=pole          full_frame_mask mean=0.1323
+[Q4-post] frame= 22  class=sidewalk      full_frame_mask mean=15.1077
+[Q4-post] frame= 22  class=vegetation    full_frame_mask mean=31.2288
+[Q5] frame= 22  class=pole          ffm_mean=1.0592 (before overlay)
+[Q5] frame= 22  class=pole          ffm_mean=0.1675 (before overlay)
+[Q5] frame= 22  class=pole          ffm_mean=0.1323 (before overlay)
+[Q5] frame= 22  class=sidewalk      ffm_mean=15.1077 (before overlay)
+[Q5] frame= 22  class=vegetation    ffm_mean=31.2288 (before overlay)
+[Q2] frame= 23  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 23  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 23  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 23  class=pole          mask min=0  max=255  mean=1.0664  shape=(1080, 1920)
+[Q1] frame= 23  class=pole          mask min=0  max=255  mean=0.1338  shape=(1080, 1920)
+[Q1] frame= 23  class=pole          mask min=0  max=255  mean=0.0192  shape=(1080, 1920)
+[Q7-rt] frame= 23  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 23  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 23  class=pole          -> CLEAN (Bayesian posterior path)
+[Q4-pre] frame= 23  class=pole          tmb64 min=0  max=255  mean=68.4192
+[Q4-pre] frame= 23  class=pole          tmb64 min=0  max=255  mean=66.2402
+[Q4-pre] frame= 23  class=pole          tmb64 min=0  max=255  mean=250.3931
+[Q4-pre] frame= 23  class=sidewalk      tmb64 min=0  max=255  mean=198.1604
+[Q4-post] frame= 23  class=pole          full_frame_mask mean=1.0238
+[Q4-post] frame= 23  class=pole          full_frame_mask mean=0.1702
+[Q4-post] frame= 23  class=pole          full_frame_mask mean=0.1451
+[Q4-post] frame= 23  class=sidewalk      full_frame_mask mean=14.9956
+[Q5] frame= 23  class=pole          ffm_mean=1.0238 (before overlay)
+[Q5] frame= 23  class=pole          ffm_mean=0.1702 (before overlay)
+[Q5] frame= 23  class=pole          ffm_mean=0.1451 (before overlay)
+[Q5] frame= 23  class=sidewalk      ffm_mean=14.9956 (before overlay)
+[Q2] frame= 24  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 24  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q2] frame= 24  class=pole          raw min=0.000000  max=1.000000  dtype=torch.uint8
+[Q1] frame= 24  class=pole          mask min=0  max=255  mean=1.0562  shape=(1080, 1920)
+[Q1] frame= 24  class=pole          mask min=0  max=255  mean=0.1408  shape=(1080, 1920)
+[Q1] frame= 24  class=pole          mask min=0  max=255  mean=0.0192  shape=(1080, 1920)
+[Q7-rt] frame= 24  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 24  class=pole          -> CLEAN (Bayesian posterior path)
+[Q7-rt] frame= 24  class=pole          -> CLEAN (Bayesian posterior path)
+[Q4-pre] frame= 24  class=pole          tmb64 min=0  max=255  mean=68.3569
+[Q4-pre] frame= 24  class=pole          tmb64 min=0  max=255  mean=66.1157
+[Q4-pre] frame= 24  class=pole          tmb64 min=0  max=255  mean=250.3931
+[Q4-pre] frame= 24  class=sidewalk      tmb64 min=0  max=255  mean=198.1604
+[Q4-post] frame= 24  class=pole          full_frame_mask mean=1.0313
+[Q4-post] frame= 24  class=pole          full_frame_mask mean=0.1750
+[Q4-post] frame= 24  class=pole          full_frame_mask mean=0.1376
+[Q4-post] frame= 24  class=sidewalk      full_frame_mask mean=14.8749
+[Q5] frame= 24  class=pole          ffm_mean=1.0313 (before overlay)
+[Q5] frame= 24  class=pole          ffm_mean=0.1750 (before overlay)
+[Q5] frame= 24  class=pole          ffm_mean=0.1376 (before overlay)
+[Q5] frame= 24  class=sidewalk      ffm_mean=14.8749 (before overlay)
+--- processed 25 frames ---
+
+================================================================================
+DEBUG RUN COMPLETE -- processed 25 frames
+================================================================================
