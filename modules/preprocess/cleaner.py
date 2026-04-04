@@ -3,31 +3,48 @@ import os
 import logging
 
 class Preprocessor:
-    def __init__(self, target_resolution=(640, 640)):
+    def __init__(self, target_resolution=(640, 640), high_perf=True, enabled=True):
         self.target_resolution = target_resolution
+        self.high_perf = high_perf
+        self.enabled=enabled
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def enhance_contrast(self, frame):
+        """LAB color space CLAHE enhancement."""
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         l = clahe.apply(l)
         merged = cv2.merge((l, a, b))
         return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
 
     def apply_filters(self, frame):
-        filtered = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
-        gray = cv2.cvtColor(filtered, cv2.COLOR_BGR2GRAY)
+        """Fast sharpening filter."""
+        if self.high_perf:
+            # Much faster than bilateralFilter for real-time
+            blurred = cv2.GaussianBlur(frame, (5, 5), 0)
+        else:
+            blurred = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
+            
+        # Laplacian sharpening
+        gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
         laplacian = cv2.Laplacian(gray, cv2.CV_64F)
         laplacian = cv2.convertScaleAbs(laplacian)
         laplacian_3ch = cv2.cvtColor(laplacian, cv2.COLOR_GRAY2BGR)
-        sharpened = cv2.addWeighted(filtered, 1.2, laplacian_3ch, -0.3, 0)
+        sharpened = cv2.addWeighted(blurred, 1.2, laplacian_3ch, -0.3, 0)
         return sharpened
 
     def process_frame(self, frame):
         """Processes a single frame: contrast, sharp, resize."""
-        frame_proc = self.enhance_contrast(frame)
-        frame_proc = self.apply_filters(frame_proc)
+
+        if not self.enabled:
+        # 🚀 Completely bypass preprocessing
+            return frame
+        # For maximum performance, we can skip contrast enhancement if already good
+        if not self.high_perf:
+            frame = self.enhance_contrast(frame)
+            
+        frame_proc = self.apply_filters(frame)
         frame_proc = cv2.resize(frame_proc, self.target_resolution)
         return frame_proc
 

@@ -95,9 +95,9 @@ if __name__ == "__main__":
 
     # Video Preprocessing
     try:
-        model = YOLO(r"d:\Abhay\Hacksagon_Project\Quarks_hacksagon\modules\weights\TrainedWeights.pt", task="segment")
+        model = YOLO(r"../../weights/best.pt", task="segment")
         prev_time = time.time()
-        for raw_frame, proc_frame in preprocessing_stream(r"C:\Users\ashis\Downloads\CurrVideo.mp4", yield_raw=True):
+        for raw_frame, proc_frame in preprocessing_stream(r"../../Data/inputs/videoplayback.mp4", yield_raw=True):
             raw_results = model(raw_frame, verbose=False)
             proc_results = model(proc_frame, verbose=False)
             

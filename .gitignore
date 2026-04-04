@@ -34,3 +34,8 @@ runs/
 
 # Logs
 *.log
+
+#Training Social lstm
+modules/social_lstm/data/argoverse/
+modules/social_lstm/data/__pycache__/
+modules/social_lstm/checkpoints/
